@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Phosphor-ikoner</title>
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 <style>
   :root {
     --bg: #FAF7F2;
@@ -143,6 +144,27 @@
   }
   .toast.show { opacity: 1; translate: -50% 0; }
 
+  /* ---------- Theme colours, suggestions, multi-select ---------- */
+  .color-rows { display: grid; gap: 10px; }
+  .sub-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-label b { color: var(--ink); font-weight: 600; }
+  .suggest-reason { font-size: 11.5px; color: var(--muted); margin: -2px 2px 8px; }
+  .suggest-reason b { color: var(--ink); font-weight: 600; }
+  .refresh { border: 0; background: transparent; color: var(--muted); width: 22px; height: 22px; border-radius: 6px; display: inline-grid; place-items: center; }
+  .refresh:hover { background: var(--accent-soft); color: var(--ink); }
+  .refresh svg { width: 13px; height: 13px; }
+  .cell { position: relative; }
+  .cell.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.picked::after {
+    content: ""; position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='white'%3E%3Cpath d='M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z'/%3E%3C/svg%3E") center / 10px no-repeat;
+    box-shadow: 0 0 0 2px var(--bg);
+  }
+  .preview.multi { grid-template-columns: 1fr 1fr; padding: 7px; gap: 2px; }
+  .preview.multi svg { width: 20px; height: 20px; }
+  .preview .more { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 11.5px; text-decoration: underline; text-underline-offset: 2px; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -161,14 +183,33 @@
     </div>
     <div>
       <div class="label">Farve</div>
-      <div class="colors" id="colors">
-        <label class="swatch custom" title="Vælg egen farve"><input type="color" id="picker" aria-label="Vælg egen farve"></label>
-        <label class="hex">#<input id="hex" maxlength="6" spellcheck="false" aria-label="Hex-farve"></label>
+      <div class="color-rows">
+        <div id="themeBlock" hidden>
+          <div class="sub-label">Fra præsentationen <b id="themeName"></b></div>
+          <div class="colors" id="themeColors"></div>
+        </div>
+        <div>
+          <div class="sub-label" id="stdLabel" hidden>Standard</div>
+          <div class="colors" id="colors">
+            <label class="swatch custom" title="Vælg egen farve"><input type="color" id="picker" aria-label="Vælg egen farve"></label>
+            <label class="hex">#<input id="hex" maxlength="6" spellcheck="false" aria-label="Hex-farve"></label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="scroll" id="scroll">
+    <div id="suggestWrap" hidden>
+      <div class="section-title">
+        <span class="label" style="margin:0" id="suggestTitle">Forslag til sliden</span>
+        <button class="refresh" id="suggestRefresh" title="Læs sliden igen" aria-label="Læs sliden igen">
+          <svg viewBox="0 0 256 256" fill="currentColor"><path d="M228,48V96a12,12,0,0,1-12,12H168a12,12,0,0,1,0-24h19l-7.8-7.8a75.55,75.55,0,0,0-53.32-22.26h-.43A75.49,75.49,0,0,0,72.39,75.57,12,12,0,1,1,55.61,58.41a99.38,99.38,0,0,1,69.87-28.47H126A99.42,99.42,0,0,1,196.2,59.23L204,67V48a12,12,0,0,1,24,0ZM183.61,180.43a75.49,75.49,0,0,1-53.09,21.63h-.43A75.55,75.55,0,0,1,76.77,179.8L69,172H88a12,12,0,0,0,0-24H40a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V189l7.8,7.8A99.42,99.42,0,0,0,130,226.06h.56a99.38,99.38,0,0,0,69.87-28.47,12,12,0,0,0-16.78-17.16Z"/></svg>
+        </button>
+      </div>
+      <div class="suggest-reason" id="suggestReason"></div>
+      <div class="grid" id="suggest"></div>
+    </div>
     <div id="recentWrap" hidden>
       <div class="section-title"><span class="label" style="margin:0">Senest brugt</span></div>
       <div class="grid" id="recent"></div>
@@ -192,7 +233,7 @@
     </div>
     <button class="insert" id="insert" disabled>
       <svg viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
-      Indsæt
+      <span id="insertLabel">Indsæt</span>
     </button>
   </div>
 
@@ -208,23 +249,80 @@ const SWATCHES = [
   { hex: "7A7A7A", name: "Grå" },
   { hex: "FFFFFF", name: "Hvid" },
 ];
-// Danske søgeord -> engelske ikonnavne/tags.
+// Danske ord (grundform) -> engelske ord, der matcher ikonnavne/tags. Bruges af søgning og slide-forslag;
+// bøjninger (kunder, kunderne) og sammensatte ord (kundetilfredshed) findes via translate().
 const DANISH = {
-  pil: "arrow", pile: "arrow", bruger: "user", person: "user", personer: "users", graf: "chart", diagram: "chart",
-  penge: "money", hus: "house", hjem: "house", kalender: "calendar", ur: "clock", tid: "clock", mail: "envelope",
-  brev: "envelope", telefon: "phone", søg: "magnifying", lup: "magnifying", indstillinger: "gear", tandhjul: "gear",
+  pil: "arrow", bruger: "user", person: "user person", menneske: "person user", graf: "chart", diagram: "chart",
+  penge: "money coins", hus: "house", hjem: "house", kalender: "calendar", ur: "clock", tid: "clock timer", mail: "envelope",
+  brev: "envelope", telefon: "phone", søg: "magnifying", lup: "magnifying", indstilling: "gear", tandhjul: "gear",
   stjerne: "star", hjerte: "heart", lås: "lock", nøgle: "key", fil: "file", mappe: "folder", dokument: "file",
   bil: "car", fly: "airplane", tog: "train", lastbil: "truck", skib: "boat", båd: "boat", verden: "globe", kort: "map",
-  lokation: "map-pin", pære: "lightbulb", idé: "lightbulb", ide: "lightbulb", mål: "target", flag: "flag",
-  advarsel: "warning", tjek: "check", flueben: "check", kryds: "x", plus: "plus", minus: "minus", info: "info",
-  spørgsmål: "question", bog: "book", skole: "graduation", værktøj: "wrench", byg: "hammer", fabrik: "factory",
-  energi: "lightning", sol: "sun", vind: "wind", blad: "leaf", træ: "tree", vand: "drop", skraldespand: "trash",
-  slet: "trash", kurv: "basket", indkøb: "shopping", butik: "storefront", kontor: "building", bygning: "building",
-  sky: "cloud", data: "database", computer: "desktop", skærm: "monitor", kamera: "camera", billede: "image",
-  musik: "music", video: "video", hånd: "hand", aftale: "handshake", håndtryk: "handshake", vækst: "trend-up",
-  fald: "trend-down", procent: "percent", tal: "number", sikkerhed: "shield", skjold: "shield", team: "users",
-  møde: "users", tale: "chat", besked: "chat", chat: "chat", del: "share", download: "download", upload: "upload",
+  lokation: "map-pin", placering: "map-pin", pære: "lightbulb", idé: "lightbulb", ide: "lightbulb", mål: "target",
+  flag: "flag", advarsel: "warning", tjek: "check", flueben: "check", kryds: "x", info: "info",
+  spørgsmål: "question", bog: "book", skole: "graduation student", værktøj: "wrench toolbox", byg: "hammer",
+  fabrik: "factory", energi: "lightning energy", sol: "sun solar", vind: "wind", blad: "leaf", træ: "tree",
+  vand: "drop water", skraldespand: "trash", affald: "trash recycle", kurv: "basket", indkøb: "shopping",
+  butik: "storefront", kontor: "building office", bygning: "building", sky: "cloud", data: "database chart",
+  computer: "desktop laptop", skærm: "monitor", kamera: "camera", billede: "image", musik: "music", video: "video", ai: "robot",
+  hånd: "hand", aftale: "handshake", håndtryk: "handshake", vækst: "growth trend-up chart-line-up", stigning: "trend-up",
+  fald: "trend-down", procent: "percent", tal: "number", sikkerhed: "shield security", skjold: "shield", team: "users",
+  møde: "users meeting", tale: "chat", besked: "chat", del: "share", hent: "download",
+  // Forretning og økonomi
+  strategi: "strategy target", plan: "strategy list", vision: "eye binoculars", mission: "target flag",
+  kunde: "user customer", medarbejder: "users employee", ledelse: "crown leader", leder: "crown", chef: "crown",
+  organisation: "tree-structure", struktur: "tree-structure", proces: "flow-arrow path", trin: "steps",
+  marked: "storefront market chart", markedsføring: "megaphone", salg: "shopping-cart sale tag", pris: "tag price",
+  omsætning: "money chart-line-up", indtjening: "money coins", overskud: "coins money", resultat: "chart-bar trophy",
+  økonomi: "money bank", budget: "calculator wallet", omkostning: "receipt money", investering: "money piggy-bank trend-up",
+  finans: "bank money", bank: "bank", lån: "bank", betaling: "credit-card", faktura: "invoice receipt", kontrakt: "file-text signature",
+  risiko: "warning", trussel: "warning", mulighed: "lightbulb", styrke: "barbell", svaghed: "warning",
+  analyse: "magnifying chart", undersøgelse: "magnifying", rapport: "file-text", dokumentation: "file-text",
+  præsentation: "presentation", oversigt: "list", tidsplan: "calendar", deadline: "clock", milepæl: "flag",
+  projekt: "kanban", opgave: "list-checks", tjekliste: "list-checks", krav: "list-checks", kvalitet: "seal-check medal",
+  certificering: "certificate", certifikat: "certificate", standard: "seal-check", effektivitet: "lightning gauge",
+  optimering: "gauge", produktivitet: "gauge", ydelse: "gauge", kapacitet: "gauge", forbedring: "trend-up",
+  innovation: "lightbulb rocket", udvikling: "rocket code", lancering: "rocket", start: "rocket", digital: "devices cpu",
+  digitalisering: "cpu devices", teknologi: "cpu", software: "code", system: "gear", platform: "stack",
+  robot: "robot", automatisering: "robot gear", it: "desktop", netværk: "network",
+  samarbejde: "handshake users", partner: "handshake", partnerskab: "handshake", leverandør: "truck package",
+  forsyning: "truck", logistik: "truck package", lager: "warehouse package", transport: "truck", levering: "truck package",
+  eksport: "globe airplane", import: "boat", international: "globe", global: "globe", lokal: "map-pin", region: "map-trifold",
+  kommunikation: "chat megaphone", dialog: "chats", feedback: "chat", tilfredshed: "smiley thumbs-up", kvalitetssikring: "seal-check",
+  uddannelse: "graduation-cap", kompetence: "graduation-cap", træning: "barbell chalkboard-teacher", kursus: "chalkboard-teacher",
+  viden: "book brain", læring: "book", beslutning: "signpost", valg: "signpost", retning: "compass signpost",
+  fremtid: "rocket binoculars", historik: "clock-counter-clockwise", tidslinje: "calendar", jura: "scales gavel", lov: "scales",
+  regler: "scales", compliance: "scales shield", sundhed: "heartbeat first-aid", trivsel: "heart smiley", sygehus: "hospital",
+  medicin: "pill", ejendom: "buildings house", bolig: "house", byggeri: "crane hammer", anlæg: "factory",
+  // Bæredygtighed, energi og landbrug
+  bæredygtighed: "leaf recycle plant", miljø: "leaf tree", klima: "thermometer globe", grøn: "leaf plant",
+  genbrug: "recycle", cirkulær: "recycle", udledning: "factory cloud", strøm: "lightning plug", el: "lightning plug",
+  batteri: "battery-charging", solcelle: "solar-panel sun", varme: "fire thermometer", olie: "drop", gas: "fire",
+  landbrug: "plant grains tractor barn", mark: "plant grains", jord: "plant", afgrøde: "grains plant", korn: "grains",
+  dyr: "cow", ko: "cow", gris: "piggy-bank", mejeri: "cow", mælk: "cow", fødevare: "bread carrot", mad: "fork-knife",
+  fisk: "fish", skov: "tree", natur: "tree mountains", vandløb: "waves", hav: "waves boat", by: "city buildings",
 };
+const STOPWORDS = new Set(("og i at til af på for med er det en et de der som om fra ved har kan vil skal vores jeres deres " +
+  "sig sin sine han hun den dem man nu her mere mindre meget alle andre hvor hvad hvordan hvorfor når efter før under over " +
+  "også eller samt ikke men være blive bliver var får have the and with of to in on is are a an our your from by this " +
+  "that be at as or not will can we you they it its more most new all").split(" "));
+const ENDINGS = ["ernes", "erne", "enes", "ene", "rne", "ers", "er", "en", "et", "ne", "es", "r", "e", "s"];
+const DA_KEYS = Object.keys(DANISH).filter((k) => k.length >= 4).sort((a, b) => b.length - a.length);
+
+// Danske ord -> engelske nøgleord; tom liste hvis ordet er ukendt.
+function translate(word) {
+  if (DANISH[word]) return DANISH[word].split(" ");
+  for (const e of ENDINGS) {
+    const base = word.slice(0, -e.length);
+    if (word.endsWith(e) && base.length >= 2 && DANISH[base]) return DANISH[base].split(" ");
+  }
+  if (word.length >= 8) {
+    const parts = DA_KEYS.filter((k) => word.includes(k)).slice(0, 2);
+    return parts.flatMap((k) => DANISH[k].split(" "));
+  }
+  return [];
+}
+
+const words = (text) => (text.toLowerCase().match(/[a-zæøå0-9]+/g) || []).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -241,7 +339,14 @@ const state = {
   query: "",
   hits: [],                       // names in current result order
   selected: null,
+  picked: [],                     // ikoner valgt med Ctrl/Shift-klik (indsættes samlet)
   recent: store.get("recent", []),
+  index: [],                      // [{ n, parts: Set, tags: Set }] til slide-forslag
+  suggest: [],                    // forslag til den aktuelle slide
+  suggestFrom: [],                // ordene på sliden, forslagene bygger på
+  slideIndex: 0,
+  theme: [],                      // [{ hex, name }] fra præsentationens tema
+  slideSize: { w: 960, h: 540 },  // punkter; læses fra præsentationen
 };
 
 const svg = (inner, attrs = "") => `<svg viewBox="0 0 256 256" fill="currentColor" ${attrs}>${inner}</svg>`;
@@ -255,7 +360,7 @@ async function loadWeight(w) {
 // ---------- Search ----------
 function search(query) {
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
-    .map((t) => [t, DANISH[t]].filter(Boolean));
+    .map((t) => [t, ...translate(t)]);
   if (!terms.length) return state.meta.map((i) => i.n);
   const scored = [];
   for (const { n, t } of state.meta) {
@@ -276,11 +381,163 @@ function search(query) {
   return scored.sort((a, b) => b[0] - a[0] || a[1].localeCompare(b[1])).map((s) => s[1]);
 }
 
+// ---------- Slide-forslag ----------
+// Scorer ikoner efter ord på sliden (titlen tæller 3x). Navnedele vejer mere end tags,
+// og højst 2 ikoner pr. "familie" (fx arrow-*), så forslagene bliver varierede.
+function suggestFor(title, text) {
+  const keys = new Map();
+  const add = (txt, weight) => {
+    for (const w of words(txt)) {
+      for (const k of new Set([w, ...translate(w)])) {
+        if (k.length < 3) continue;
+        const cur = keys.get(k) || { weight: 0, from: new Set() };
+        cur.weight += weight;
+        cur.from.add(w);
+        keys.set(k, cur);
+      }
+    }
+  };
+  add(title, 3);
+  add(text, 1);
+  const scored = [];
+  for (const icon of state.index) {
+    let score = 0;
+    const from = new Set();
+    for (const [k, { weight, from: f }] of keys) {
+      const hit = icon.n === k ? 14 : icon.parts.has(k) ? 10 : icon.tags.has(k) ? 4 : 0;
+      if (hit) { score += hit * weight; f.forEach((w) => from.add(w)); }
+    }
+    if (score) scored.push({ n: icon.n, score, from });
+  }
+  scored.sort((a, b) => b.score - a.score || a.n.length - b.n.length);
+  const families = {}, top = [];
+  for (const s of scored) {
+    const fam = s.n.split("-")[0];
+    if ((families[fam] = (families[fam] || 0) + 1) > 2) continue;
+    top.push(s);
+    if (top.length === 12) break;
+  }
+  return { names: top.map((s) => s.n), from: [...new Set(top.flatMap((s) => [...s.from]))].slice(0, 5) };
+}
+
+const hasPptApi = (v = "1.5") => !!window.Office?.context?.requirements?.isSetSupported?.("PowerPointApi", v);
+
+// Titel og øvrig tekst fra den slide, der er valgt i PowerPoint.
+function readSlide() {
+  return PowerPoint.run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    const all = ctx.presentation.slides;
+    sel.load("items/id");
+    all.load("items/id");
+    await ctx.sync();
+    const slide = sel.items[0];
+    if (!slide) return null;
+    slide.shapes.load("items/type,items/name");
+    await ctx.sync();
+    let title = "", text = "";
+    for (const s of slide.shapes.items) {
+      if (!["GeometricShape", "TextBox", "Placeholder"].includes(s.type)) continue;
+      try {
+        const range = s.textFrame.textRange;
+        range.load("text");
+        await ctx.sync();
+        if (!title && /title|titel/i.test(s.name)) title = range.text; else text += " " + range.text;
+      } catch { /* figuren har ingen tekst */ }
+    }
+    return { key: slide.id + "|" + title + "|" + text, index: all.items.findIndex((x) => x.id === slide.id) + 1, title, text };
+  });
+}
+
+let lastSlideKey = "";
+async function refreshSuggestions(force = false) {
+  if (!hasPptApi() || !state.index.length) return;
+  let slide;
+  try { slide = await readSlide(); } catch { return; }
+  if (!slide || (slide.key === lastSlideKey && !force)) return;
+  lastSlideKey = slide.key;
+  const { names, from } = suggestFor(slide.title, slide.text);
+  state.suggest = names;
+  state.suggestFrom = from;
+  state.slideIndex = slide.index;
+  renderSuggestions();
+}
+
+function renderSuggestions() {
+  const icons = state.data[state.weight];
+  const show = !!icons && !state.query && state.suggest.length > 0;
+  $("suggestWrap").hidden = !show;
+  if (!show) return;
+  $("suggestTitle").textContent = `Forslag til slide ${state.slideIndex}`;
+  $("suggestReason").innerHTML = "Ud fra " + state.suggestFrom.map((w) => `<b>${escapeHtml(w)}</b>`).join(", ");
+  $("suggest").innerHTML = cellsHtml(state.suggest, icons);
+}
+
+// ---------- Præsentationens tema og slidestørrelse ----------
+// Office.js har ingen API til temafarver, så vi læser .pptx-filen og finder temaet for første slidemaster.
+async function readPresentation() {
+  const ok = (r) => r.status === Office.AsyncResultStatus.Succeeded;
+  const file = await new Promise((res, rej) => Office.context.document.getFileAsync(Office.FileType.Compressed,
+    { sliceSize: 4194304 }, (r) => (ok(r) ? res(r.value) : rej(r.error))));
+  const slices = [];
+  try {
+    for (let i = 0; i < file.sliceCount; i++) {
+      slices.push(await new Promise((res, rej) => file.getSliceAsync(i, (r) => (ok(r) ? res(r.value.data) : rej(r.error)))));
+    }
+  } finally { file.closeAsync(); }
+  const bytes = new Uint8Array(slices.reduce((n, s) => n + s.length, 0));
+  let offset = 0;
+  for (const s of slices) { bytes.set(s, offset); offset += s.length; }
+
+  const files = fflate.unzipSync(bytes, { filter: (f) =>
+    /^ppt\/(presentation\.xml|_rels\/presentation\.xml\.rels|theme\/theme\d+\.xml|slideMasters\/_rels\/slideMaster\d+\.xml\.rels)$/.test(f.name) });
+  const xml = (p) => files[p] && new DOMParser().parseFromString(fflate.strFromU8(files[p]), "application/xml");
+  const rel = (doc, type) => [...(doc?.getElementsByTagName("Relationship") || [])]
+    .find((r) => r.getAttribute("Type").endsWith("/" + type))?.getAttribute("Target").split("/").pop();
+
+  const result = {};
+  const size = xml("ppt/presentation.xml")?.getElementsByTagName("p:sldSz")[0];
+  if (size) result.slideSize = { w: size.getAttribute("cx") / 12700, h: size.getAttribute("cy") / 12700 };
+
+  const master = rel(xml("ppt/_rels/presentation.xml.rels"), "slideMaster");
+  const themeFile = (master && rel(xml(`ppt/slideMasters/_rels/${master}.rels`), "theme")) || "theme1.xml";
+  const scheme = xml("ppt/theme/" + themeFile)?.getElementsByTagName("a:clrScheme")[0];
+  if (scheme) {
+    const colors = {};
+    for (const el of scheme.children) {
+      const c = el.firstElementChild;
+      const v = c && (c.getAttribute("lastClr") || c.getAttribute("val"));  // sysClr: val="windowText", lastClr="000000"
+      if (v && /^[0-9A-F]{6}$/i.test(v)) colors[el.localName] = v.toUpperCase();
+    }
+    result.themeName = scheme.getAttribute("name");
+    result.theme = THEME_SLOTS.filter(([k]) => colors[k]).map(([k, name]) => ({ hex: colors[k], name }))
+      .filter((c, i, all) => all.findIndex((x) => x.hex === c.hex) === i);
+  }
+  return result;
+}
+const THEME_SLOTS = [["dk2", "Mørk 2"], ["accent1", "Accent 1"], ["accent2", "Accent 2"], ["accent3", "Accent 3"],
+  ["accent4", "Accent 4"], ["accent5", "Accent 5"], ["accent6", "Accent 6"], ["dk1", "Tekst"], ["lt2", "Lys 2"]];
+
+function applyTheme(theme, name) {
+  state.theme = theme;
+  $("themeBlock").hidden = !theme.length;
+  $("stdLabel").hidden = !theme.length;
+  $("themeName").textContent = name || "";
+  $("themeColors").innerHTML = theme.map((c) => swatchHtml(c.hex, c.name)).join("");
+  // Forbind automatisk til temaet: brug Accent 1, medmindre den valgte farve allerede er en temafarve.
+  if (theme.length && !theme.some((c) => c.hex === state.hex)) {
+    setColor((theme.find((c) => c.name === "Accent 1") || theme[0]).hex);
+  } else applyColor();
+}
+
+const swatchHtml = (hex, name) =>
+  `<button class="swatch" data-hex="${hex}" title="${name} · #${hex}" aria-label="${name}" style="background:#${hex}"></button>`;
+
 // ---------- Rendering ----------
 function cellsHtml(names, icons) {
-  return names.map((n) =>
-    `<button class="cell${n === state.selected ? " selected" : ""}" data-name="${n}" title="${n}">${svg(icons[n] || "")}</button>`
-  ).join("");
+  return names.map((n) => {
+    const cls = (n === state.selected ? " selected" : "") + (state.picked.includes(n) ? " picked" : "");
+    return `<button class="cell${cls}" data-name="${n}" title="${n}">${svg(icons[n] || "")}</button>`;
+  }).join("");
 }
 
 function renderGrid() {
@@ -298,18 +555,35 @@ function renderGrid() {
   const recent = state.recent.filter((n) => icons[n]);
   $("recentWrap").hidden = !!state.query || !recent.length;
   $("recent").innerHTML = cellsHtml(recent, icons);
-  if (state.query && state.hits.length && !state.hits.includes(state.selected)) select(state.hits[0], false);
+  renderSuggestions();
+  if (state.query && state.hits.length && !state.picked.length && !state.hits.includes(state.selected)) select(state.hits[0], false);
 }
 
+const targets = () => (state.picked.length ? state.picked : state.selected ? [state.selected] : []);
+
 function renderSelection() {
-  document.querySelectorAll(".cell.selected").forEach((c) => c.classList.remove("selected"));
-  if (!state.selected) return;
-  document.querySelectorAll(`.cell[data-name="${state.selected}"]`).forEach((c) => c.classList.add("selected"));
+  document.querySelectorAll(".cell.selected, .cell.picked").forEach((c) => c.classList.remove("selected", "picked"));
+  document.querySelectorAll(".cell[data-name]").forEach((c) => {
+    if (c.dataset.name === state.selected) c.classList.add("selected");
+    if (state.picked.includes(c.dataset.name)) c.classList.add("picked");
+  });
   const icons = state.data[state.weight];
-  $("preview").innerHTML = svg(icons[state.selected] || "");
-  $("selName").textContent = state.selected;
-  $("selSub").textContent = `${WEIGHT_LABELS[state.weight]} · #${state.hex}`;
-  $("insert").disabled = false;
+  const list = targets();
+  const label = `${WEIGHT_LABELS[state.weight]} · #${state.hex}`;
+  const preview = $("preview");
+  preview.classList.toggle("multi", list.length > 1);
+  $("insert").disabled = !list.length;
+  $("insertLabel").textContent = list.length > 1 ? `Indsæt ${list.length}` : "Indsæt";
+  if (list.length > 1) {
+    preview.innerHTML = list.slice(0, list.length > 4 ? 3 : 4).map((n) => svg(icons[n] || "")).join("") +
+      (list.length > 4 ? `<span class="more">+${list.length - 3}</span>` : "");
+    $("selName").textContent = `${list.length} ikoner valgt`;
+    $("selSub").innerHTML = `${label} · <button class="link" id="clearPicked">Ryd valg</button>`;
+  } else if (list.length) {
+    preview.innerHTML = svg(icons[list[0]] || "");
+    $("selName").textContent = list[0];
+    $("selSub").textContent = `${label} · Ctrl+klik for at vælge flere`;
+  }
 }
 
 function renderWeights() {
@@ -334,11 +608,11 @@ function applyColor() {
   document.body.classList.toggle("light-icons", luminance(state.hex) > 0.8);
   document.querySelectorAll(".swatch[data-hex]").forEach((s) =>
     s.setAttribute("aria-pressed", s.dataset.hex === state.hex));
-  const isCustom = !SWATCHES.some((s) => s.hex === state.hex);
+  const isCustom = ![...SWATCHES, ...state.theme].some((s) => s.hex === state.hex);
   document.querySelector(".swatch.custom").setAttribute("aria-pressed", isCustom);
   if (document.activeElement !== $("hex")) $("hex").value = state.hex;
   $("picker").value = "#" + state.hex;
-  if (state.selected) $("selSub").textContent = `${WEIGHT_LABELS[state.weight]} · #${state.hex}`;
+  if (targets().length) renderSelection();
 }
 
 function luminance(hex) {
@@ -348,7 +622,13 @@ function luminance(hex) {
 const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // ---------- Actions ----------
-function select(name, scroll = true) {
+// toggle = Ctrl/Shift-klik: tilføj eller fjern ikonet fra flervalget.
+function select(name, scroll = true, toggle = false) {
+  if (toggle) {
+    if (!state.picked.length && state.selected && state.selected !== name) state.picked = [state.selected];
+    state.picked = state.picked.includes(name) ? state.picked.filter((n) => n !== name) : [...state.picked, name];
+    if (state.picked.length === 1) { name = state.picked[0]; state.picked = []; }
+  } else state.picked = [];
   state.selected = name;
   renderSelection();
   if (scroll) document.querySelector(`#grid .cell[data-name="${name}"]`)?.scrollIntoView({ block: "nearest" });
@@ -386,25 +666,65 @@ function iconSvg(name) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="${pt}pt" height="${pt}pt" fill="#${state.hex}">${state.data[state.weight][name]}</svg>`;
 }
 
-function insert(name = state.selected) {
-  if (!name) return;
-  const markup = iconSvg(name);
-  const pt = state.size * 28.3465;
-  const done = (ok, msg) => {
-    toast(ok ? `Indsat: ${name}` : msg);
-    if (ok) {
-      state.recent = [name, ...state.recent.filter((n) => n !== name)].slice(0, 16);
-      store.set("recent", state.recent);
-      if (!state.query) renderGrid();
-    }
-  };
-  if (window.Office?.context?.document?.setSelectedDataAsync) {
-    Office.context.document.setSelectedDataAsync(markup,
-      { coercionType: Office.CoercionType.XmlSvg, imageWidth: pt, imageHeight: pt },
-      (r) => done(r.status === Office.AsyncResultStatus.Succeeded, "Kunne ikke indsætte: " + (r.error?.message || "ukendt fejl")));
-  } else {
+// Placering af n ikoner på række(r), centreret på sliden.
+function layout(n, pt) {
+  const { w, h } = state.slideSize, gap = pt * 0.6, step = pt + gap;
+  const perRow = Math.max(1, Math.min(n, Math.floor((w * 0.9 + gap) / step)));
+  const rows = Math.ceil(n / perRow), top0 = (h - (rows * step - gap)) / 2;
+  return Array.from({ length: n }, (_, i) => {
+    const r = Math.floor(i / perRow), inRow = Math.min(perRow, n - r * perRow);
+    return { left: (w - (inRow * step - gap)) / 2 + (i % perRow) * step, top: top0 + r * step };
+  });
+}
+
+const insertSvg = (markup, opts) => new Promise((res, rej) => Office.context.document.setSelectedDataAsync(markup,
+  { coercionType: Office.CoercionType.XmlSvg, ...opts }, (r) => (r.status === Office.AsyncResultStatus.Succeeded ? res() : rej(r.error))));
+
+// Navngiver det netop indsatte ikon og fravælger det, så næste indsættelse ikke erstatter det.
+function claimInserted(name) {
+  return PowerPoint.run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedShapes();
+    sel.load("items/id");
+    await ctx.sync();
+    const shape = sel.items[sel.items.length - 1];
+    if (!shape) return null;
+    shape.name = "Ikon " + name;
+    ctx.presentation.setSelectedShapes([]);
+    await ctx.sync();
+    return shape.id;
+  });
+}
+
+let inserting = false;
+async function insert(names = targets()) {
+  if (!names.length || inserting) return;
+  const markups = names.map(iconSvg);
+  if (!window.Office?.context?.document?.setSelectedDataAsync) {
     // Uden for PowerPoint (fx ved test i en browser): kopiér SVG'en i stedet.
-    navigator.clipboard?.writeText(markup).then(() => done(true), () => done(false, "Åbn panelet i PowerPoint for at indsætte"));
+    navigator.clipboard?.writeText(markups.join("\n")).then(() => toast("SVG kopieret"), () => toast("Åbn panelet i PowerPoint for at indsætte"));
+    return;
+  }
+  inserting = true;
+  $("insert").disabled = true;
+  const pt = state.size * 28.3465, spots = layout(names.length, pt), ids = [];
+  try {
+    for (let i = 0; i < names.length; i++) {
+      await insertSvg(markups[i], { imageLeft: spots[i].left, imageTop: spots[i].top, imageWidth: pt, imageHeight: pt });
+      if (hasPptApi()) ids.push(await claimInserted(names[i]).catch(() => null));
+    }
+    // Markér alle de nye ikoner, så de kan flyttes samlet.
+    if (ids.filter(Boolean).length) {
+      await PowerPoint.run((ctx) => { ctx.presentation.setSelectedShapes(ids.filter(Boolean)); return ctx.sync(); }).catch(() => {});
+    }
+    toast(names.length > 1 ? `Indsat ${names.length} ikoner` : `Indsat: ${names[0]}`);
+    state.recent = [...names, ...state.recent.filter((n) => !names.includes(n))].slice(0, 16);
+    store.set("recent", state.recent);
+    if (!state.query) renderGrid();
+  } catch (e) {
+    toast("Kunne ikke indsætte: " + (e?.message || "ukendt fejl"));
+  } finally {
+    inserting = false;
+    renderSelection();
   }
 }
 
@@ -420,10 +740,8 @@ function toast(msg) {
 // ---------- Events ----------
 function wire() {
   // Swatches
-  const colors = $("colors");
-  colors.insertAdjacentHTML("afterbegin", SWATCHES.map((s) =>
-    `<button class="swatch" data-hex="${s.hex}" title="${s.name} · #${s.hex}" aria-label="${s.name}" style="background:#${s.hex}"></button>`).join(""));
-  colors.addEventListener("click", (e) => { const s = e.target.closest(".swatch[data-hex]"); if (s) setColor(s.dataset.hex); });
+  $("colors").insertAdjacentHTML("afterbegin", SWATCHES.map((s) => swatchHtml(s.hex, s.name)).join(""));
+  document.querySelector(".top").addEventListener("click", (e) => { const s = e.target.closest(".swatch[data-hex]"); if (s) setColor(s.dataset.hex); });
   $("picker").addEventListener("input", (e) => setColor(e.target.value));
   $("hex").addEventListener("input", (e) => setColor(e.target.value));
   $("hex").addEventListener("blur", () => { $("hex").value = state.hex; });
@@ -440,9 +758,17 @@ function wire() {
   $("clear").addEventListener("click", () => { $("search").value = ""; $("search").dispatchEvent(new Event("input")); $("search").focus(); });
 
   const onCell = (e) => e.target.closest(".cell");
-  $("scroll").addEventListener("click", (e) => { const c = onCell(e); if (c) select(c.dataset.name, false); });
-  $("scroll").addEventListener("dblclick", (e) => { const c = onCell(e); if (c) insert(c.dataset.name); });
+  $("scroll").addEventListener("click", (e) => {
+    const c = onCell(e);
+    if (c) select(c.dataset.name, false, e.ctrlKey || e.metaKey || e.shiftKey);
+  });
+  $("scroll").addEventListener("dblclick", (e) => {
+    const c = onCell(e);
+    if (c && !(e.ctrlKey || e.metaKey || e.shiftKey)) insert([c.dataset.name]);
+  });
   $("insert").addEventListener("click", () => insert());
+  $("selSub").addEventListener("click", (e) => { if (e.target.id === "clearPicked") select(state.selected, false); });
+  $("suggestRefresh").addEventListener("click", () => refreshSuggestions(true));
 
   $("size").addEventListener("change", (e) => setSize(parseFloat(e.target.value.replace(",", "."))));
   $("sizeDown").addEventListener("click", () => setSize(state.size - 0.5));
@@ -454,6 +780,7 @@ function wire() {
     if (e.key === "/" && !e.target.matches("input")) { e.preventDefault(); $("search").focus(); return; }
     if (inField) return;
     if (e.key === "Enter") { e.preventDefault(); insert(); return; }
+    if (e.key === "Escape" && state.picked.length) { select(state.selected, false); return; }
     const moves = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols(), ArrowDown: cols() };
     if (!(e.key in moves) || !state.hits.length) return;
     if (e.target === $("search") && (e.key === "ArrowLeft" || e.key === "ArrowRight")) return;
@@ -477,9 +804,28 @@ async function start() {
   $("grid").classList.add("skeleton");
   $("grid").innerHTML = '<button class="cell"></button>'.repeat(40);
   state.meta = await (await fetch("icons/meta.json")).json();
+  state.index = state.meta.map(({ n, t }) => ({ n, parts: new Set(n.split("-")), tags: new Set(t.split(" ")) }));
   await setWeight(WEIGHTS.includes(state.weight) ? state.weight : "thin");
   $("search").focus();
   loadGlyphs();
+  connectToPowerPoint();
+}
+
+// Tema, slidestørrelse og slide-forslag; kun når panelet kører i PowerPoint.
+function connectToPowerPoint() {
+  const doc = window.Office?.context?.document;
+  if (!doc?.getFileAsync) return;
+  readPresentation().then((p) => {
+    if (p.slideSize) state.slideSize = p.slideSize;
+    if (p.theme) applyTheme(p.theme, p.themeName);
+  }).catch(() => {});
+  if (!hasPptApi()) return;
+  refreshSuggestions();
+  let timer;
+  doc.addHandlerAsync(Office.EventType.DocumentSelectionChanged, () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { if (!inserting) refreshSuggestions(); }, 400);
+  });
 }
 
 if (window.Office) Office.onReady(start); else start();
