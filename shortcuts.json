@@ -6,6 +6,11 @@
    "name": "${resource.showPane}"
   },
   {
+   "id": "showBar",
+   "type": "ExecuteFunction",
+   "name": "${resource.showBar}"
+  },
+  {
    "id": "alignLeft",
    "type": "ExecuteFunction",
    "name": "${resource.alignLeft}"
@@ -51,24 +56,9 @@
    "name": "${resource.distributeV}"
   },
   {
-   "id": "spaceHMore",
+   "id": "gridAuto",
    "type": "ExecuteFunction",
-   "name": "${resource.spaceHMore}"
-  },
-  {
-   "id": "spaceHLess",
-   "type": "ExecuteFunction",
-   "name": "${resource.spaceHLess}"
-  },
-  {
-   "id": "spaceVMore",
-   "type": "ExecuteFunction",
-   "name": "${resource.spaceVMore}"
-  },
-  {
-   "id": "spaceVLess",
-   "type": "ExecuteFunction",
-   "name": "${resource.spaceVLess}"
+   "name": "${resource.gridAuto}"
   },
   {
    "id": "sameSize",
@@ -96,6 +86,31 @@
    "name": "${resource.copyType}"
   },
   {
+   "id": "copyShape",
+   "type": "ExecuteFunction",
+   "name": "${resource.copyShape}"
+  },
+  {
+   "id": "spaceHMore",
+   "type": "ExecuteFunction",
+   "name": "${resource.spaceHMore}"
+  },
+  {
+   "id": "spaceHLess",
+   "type": "ExecuteFunction",
+   "name": "${resource.spaceHLess}"
+  },
+  {
+   "id": "spaceVMore",
+   "type": "ExecuteFunction",
+   "name": "${resource.spaceVMore}"
+  },
+  {
+   "id": "spaceVLess",
+   "type": "ExecuteFunction",
+   "name": "${resource.spaceVLess}"
+  },
+  {
    "id": "bringToFront",
    "type": "ExecuteFunction",
    "name": "${resource.bringToFront}"
@@ -106,85 +121,118 @@
    "name": "${resource.sendToBack}"
   },
   {
-   "id": "gridAuto",
-   "type": "ExecuteFunction",
-   "name": "${resource.gridAuto}"
-  },
-  {
-   "id": "copyShape",
-   "type": "ExecuteFunction",
-   "name": "${resource.copyShape}"
-  },
-  {
    "id": "openCheck",
    "type": "ExecuteFunction",
    "name": "${resource.openCheck}"
-  },
-  {
-   "id": "showBar",
-   "type": "ExecuteFunction",
-   "name": "${resource.showBar}"
   }
  ],
  "shortcuts": [
   {
    "action": "showPane",
    "key": {
-    "default": "Ctrl+Alt+Shift+I"
+    "default": "Ctrl+Shift+I"
+   }
+  },
+  {
+   "action": "showBar",
+   "key": {
+    "default": "Ctrl+Shift+K"
    }
   },
   {
    "action": "alignLeft",
    "key": {
-    "default": "Ctrl+Alt+Shift+L"
+    "default": "Ctrl+Shift+L"
    }
   },
   {
    "action": "alignRight",
    "key": {
-    "default": "Ctrl+Alt+Shift+R"
+    "default": "Ctrl+Shift+R"
    }
   },
   {
    "action": "alignCenter",
    "key": {
-    "default": "Ctrl+Alt+Shift+C"
+    "default": "Ctrl+Shift+E"
    }
   },
   {
    "action": "alignTop",
    "key": {
-    "default": "Ctrl+Alt+Shift+T"
+    "default": "Ctrl+Shift+T"
    }
   },
   {
    "action": "alignBottom",
    "key": {
-    "default": "Ctrl+Alt+Shift+B"
+    "default": "Ctrl+Shift+B"
    }
   },
   {
    "action": "alignMiddle",
    "key": {
-    "default": "Ctrl+Alt+Shift+M"
+    "default": "Ctrl+Shift+M"
    }
   },
   {
    "action": "centerOnSlide",
    "key": {
-    "default": "Ctrl+Alt+Shift+O"
+    "default": "Ctrl+Shift+O"
    }
   },
   {
    "action": "distributeH",
    "key": {
-    "default": "Ctrl+Alt+Shift+H"
+    "default": "Ctrl+Shift+J"
    }
   },
   {
    "action": "distributeV",
    "key": {
-    "default": "Ctrl+Alt+Shift+V"
+    "default": "Ctrl+Shift+U"
+   }
+  },
+  {
+   "action": "gridAuto",
+   "key": {
+    "default": "Ctrl+Shift+N"
+   }
+  },
+  {
+   "action": "sameSize",
+   "key": {
+    "default": "Ctrl+Shift+S"
+   }
+  },
+  {
+   "action": "sameWidth",
+   "key": {
+    "default": "Ctrl+Shift+W"
+   }
+  },
+  {
+   "action": "sameHeight",
+   "key": {
+    "default": "Ctrl+Shift+Y"
+   }
+  },
+  {
+   "action": "swapShapes",
+   "key": {
+    "default": "Ctrl+Shift+X"
+   }
+  },
+  {
+   "action": "copyType",
+   "key": {
+    "default": "Ctrl+Shift+Q"
+   }
+  },
+  {
+   "action": "copyShape",
+   "key": {
+    "default": "Ctrl+Shift+D"
    }
   },
   {
@@ -212,36 +260,6 @@
    }
   },
   {
-   "action": "sameSize",
-   "key": {
-    "default": "Ctrl+Alt+Shift+S"
-   }
-  },
-  {
-   "action": "sameWidth",
-   "key": {
-    "default": "Ctrl+Alt+Shift+W"
-   }
-  },
-  {
-   "action": "sameHeight",
-   "key": {
-    "default": "Ctrl+Alt+Shift+E"
-   }
-  },
-  {
-   "action": "swapShapes",
-   "key": {
-    "default": "Ctrl+Alt+Shift+X"
-   }
-  },
-  {
-   "action": "copyType",
-   "key": {
-    "default": "Ctrl+Alt+Shift+P"
-   }
-  },
-  {
    "action": "bringToFront",
    "key": {
     "default": "Ctrl+Alt+Shift+F"
@@ -254,27 +272,9 @@
    }
   },
   {
-   "action": "gridAuto",
-   "key": {
-    "default": "Ctrl+Alt+Shift+N"
-   }
-  },
-  {
-   "action": "copyShape",
-   "key": {
-    "default": "Ctrl+Alt+Shift+D"
-   }
-  },
-  {
    "action": "openCheck",
    "key": {
     "default": "Ctrl+Alt+Shift+K"
-   }
-  },
-  {
-   "action": "showBar",
-   "key": {
-    "default": "Ctrl+Shift+K"
    }
   }
  ],
@@ -282,6 +282,9 @@
   "default": {
    "showPane": {
     "value": "Åbn ikonpanelet"
+   },
+   "showBar": {
+    "value": "Vis Kvadrant-genveje"
    },
    "alignLeft": {
     "value": "Flugt til venstre efter det først markerede objekt (ét objekt: til slidens kant)"
@@ -310,17 +313,8 @@
    "distributeV": {
     "value": "Fordel objekterne jævnt lodret"
    },
-   "spaceHMore": {
-    "value": "Øg den vandrette afstand med 0,1 cm"
-   },
-   "spaceHLess": {
-    "value": "Mindsk den vandrette afstand med 0,1 cm"
-   },
-   "spaceVMore": {
-    "value": "Øg den lodrette afstand med 0,1 cm"
-   },
-   "spaceVLess": {
-    "value": "Mindsk den lodrette afstand med 0,1 cm"
+   "gridAuto": {
+    "value": "Stil de markerede objekter i et gitter"
    },
    "sameSize": {
     "value": "Samme bredde og højde som det først markerede"
@@ -337,23 +331,29 @@
    "copyType": {
     "value": "Giv de øvrige markerede objekter skriften fra det først markerede"
    },
+   "copyShape": {
+    "value": "Giv de øvrige markerede figurer samme runding og håndtag som den først markerede, med samme faktiske radius uanset størrelse"
+   },
+   "spaceHMore": {
+    "value": "Øg den vandrette afstand med 0,1 cm"
+   },
+   "spaceHLess": {
+    "value": "Mindsk den vandrette afstand med 0,1 cm"
+   },
+   "spaceVMore": {
+    "value": "Øg den lodrette afstand med 0,1 cm"
+   },
+   "spaceVLess": {
+    "value": "Mindsk den lodrette afstand med 0,1 cm"
+   },
    "bringToFront": {
     "value": "Placér forrest"
    },
    "sendToBack": {
     "value": "Placér bagest"
    },
-   "gridAuto": {
-    "value": "Stil de markerede objekter i et gitter"
-   },
-   "copyShape": {
-    "value": "Giv de øvrige markerede figurer samme runding og håndtag som den først markerede, med samme faktiske radius uanset størrelse"
-   },
    "openCheck": {
     "value": "Tjek skrifttyper, farver, tekst uden for sliden og tomme pladsholdere"
-   },
-   "showBar": {
-    "value": "Vis Kvadrant-genveje"
    }
   }
  }

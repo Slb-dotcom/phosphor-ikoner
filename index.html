@@ -125,9 +125,10 @@
 
   /* ---------- Bottom: selected icon ---------- */
   .detail {
-    border-top: 1px solid var(--line); background: var(--surface); padding: 12px 14px;
-    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+    border-top: 1px solid var(--line); background: var(--surface); padding: 10px 14px;
+    display: flex; justify-content: flex-end; align-items: center; gap: 12px;
   }
+  .detail .picked-info { margin-right: auto; font-size: 12px; color: var(--muted); }
   .preview {
     width: 60px; height: 60px; border-radius: 12px; display: grid; place-items: center;
     background: var(--bg); color: var(--icon-color); box-shadow: inset 0 0 0 1px var(--line);
@@ -162,7 +163,7 @@
 
   /* ---------- Theme colours, suggestions, multi-select ---------- */
   .color-rows { display: grid; gap: 10px; }
-  #themeColors { display: grid; grid-template-columns: repeat(10, minmax(0, 26px)); gap: 5px; }
+  #themeColors { display: grid; grid-template-columns: repeat(11, minmax(0, 26px)); gap: 5px; }
   #themeColors .swatch { width: 100%; height: auto; aspect-ratio: 1; border-radius: 5px; }
   #themeColors .swatch[aria-pressed="true"]::after { inset: -3px; border-radius: 7px; }
   .sub-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -210,21 +211,14 @@
     <div>
       <div class="label">Farve</div>
       <div class="color-rows">
-        <div id="themeBlock" hidden>
+        <div id="themeBlock">
           <div class="sub-label" style="display:flex;align-items:center;gap:4px">
-            <span style="overflow:hidden;text-overflow:ellipsis">Fra præsentationen <b id="themeName"></b></span>
+            <span style="overflow:hidden;text-overflow:ellipsis">Temafarver <b id="themeName"></b></span>
             <button class="refresh" id="themeRefresh" title="Læs temaet igen" aria-label="Læs temaet igen" style="width:18px;height:18px">
               <svg viewBox="0 0 256 256" fill="currentColor"><path d="M228,48V96a12,12,0,0,1-12,12H168a12,12,0,0,1,0-24h19l-7.8-7.8a75.55,75.55,0,0,0-53.32-22.26h-.43A75.49,75.49,0,0,0,72.39,75.57,12,12,0,1,1,55.61,58.41a99.38,99.38,0,0,1,69.87-28.47H126A99.42,99.42,0,0,1,196.2,59.23L204,67V48a12,12,0,0,1,24,0ZM183.61,180.43a75.49,75.49,0,0,1-53.09,21.63h-.43A75.55,75.55,0,0,1,76.77,179.8L69,172H88a12,12,0,0,0,0-24H40a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V189l7.8,7.8A99.42,99.42,0,0,0,130,226.06h.56a99.38,99.38,0,0,0,69.87-28.47,12,12,0,0,0-16.78-17.16Z"/></svg>
             </button>
           </div>
           <div class="colors" id="themeColors"></div>
-        </div>
-        <div>
-          <div class="sub-label" id="stdLabel" hidden>Standard</div>
-          <div class="colors" id="colors">
-            <label class="swatch custom" title="Vælg egen farve"><input type="color" id="picker" aria-label="Vælg egen farve"></label>
-            <label class="hex">#<input id="hex" maxlength="6" spellcheck="false" aria-label="Hex-farve"></label>
-          </div>
         </div>
       </div>
     </div>
@@ -251,17 +245,7 @@
   </div>
 
   <div class="detail">
-    <div class="preview" id="preview"></div>
-    <div class="meta">
-      <div class="name" id="selName"></div>
-      <div class="sub" id="selSub"></div>
-      <div class="size" title="Størrelse på sliden">
-        <button id="sizeDown" aria-label="Mindre">−</button>
-        <input id="size" inputmode="decimal" aria-label="Størrelse i cm">
-        <span>cm</span>
-        <button id="sizeUp" aria-label="Større">+</button>
-      </div>
-    </div>
+    <span class="picked-info" id="pickedInfo"></span>
     <button class="insert" id="insert" disabled>
       <svg viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
       <span id="insertLabel">Indsæt</span>
@@ -382,7 +366,7 @@ const state = {
   data: {},                       // weight -> { name: inner svg }
   weight: store.get("weight", "thin"),
   hex: store.get("hex", "262139"),
-  size: store.get("sizeCm", 1.75),   // standard 1,75 cm (ny nøgle, så den gamle 2 cm ikke hænger ved)
+  size: 1.75,                     // cm; ikonerne tilpasses bagefter på sliden
   query: "",
   hits: [],                       // names in current result order
   selected: null,
@@ -596,16 +580,22 @@ function applyTheme(theme, name) {
   lastThemeKey = key;
   if (!changed) return;
   state.theme = theme;
-  $("themeBlock").hidden = !theme.length;
-  $("stdLabel").hidden = !theme.length;
   $("themeName").textContent = name || "";
-  $("themeColors").innerHTML = theme.map((c, i) => swatchHtml(c.hex, c.name, "t" + i)).join("");
+  renderColorRow();
   // Forbind automatisk til temaet: brug Accent 1, medmindre den valgte farve allerede er en temafarve.
   if (theme.length && !theme.some((c) => c.hex === state.hex)) {
     const accent = theme.findIndex((c) => c.name === "Accent 1");
     state.swatchKey = "t" + Math.max(0, accent);
     setColor(theme[Math.max(0, accent)].hex);
   } else applyColor();
+}
+
+// Temafarverne (eller Kvadrant-farverne uden for PowerPoint) og en 11. boks med farveovergang til en valgfri farve.
+function renderColorRow() {
+  const list = state.theme.length ? state.theme.map((c, i) => [c, "t" + i]) : SWATCHES.map((c, i) => [c, "s" + i]);
+  $("themeColors").innerHTML = list.map(([c, key]) => swatchHtml(c.hex, c.name, key)).join("") +
+    '<label class="swatch custom" title="Vælg egen farve"><input type="color" id="picker" aria-label="Vælg egen farve"></label>';
+  $("picker").addEventListener("input", (e) => { state.swatchKey = "custom"; setColor(e.target.value); });
 }
 
 const swatchHtml = (hex, name, key) =>
@@ -649,20 +639,9 @@ function renderSelection() {
   const icons = state.data[state.weight];
   const list = targets();
   const label = `${WEIGHT_LABELS[state.weight]} · #${state.hex}`;
-  const preview = $("preview");
-  preview.classList.toggle("multi", list.length > 1);
   $("insert").disabled = !list.length;
   $("insertLabel").textContent = list.length > 1 ? `Indsæt ${list.length}` : "Indsæt";
-  if (list.length > 1) {
-    preview.innerHTML = list.slice(0, list.length > 4 ? 3 : 4).map((n) => svg(icons[n] || "")).join("") +
-      (list.length > 4 ? `<span class="more">+${list.length - 3}</span>` : "");
-    $("selName").textContent = `${list.length} ikoner valgt`;
-    $("selSub").innerHTML = `${label} · <button class="link" id="clearPicked">Ryd valg</button>`;
-  } else if (list.length) {
-    preview.innerHTML = svg(icons[list[0]] || "");
-    $("selName").textContent = list[0];
-    $("selSub").textContent = `${label} · Ctrl+klik for at vælge flere`;
-  }
+  $("pickedInfo").innerHTML = list.length > 1 ? `${list.length} valgt · <button class="link" id="clearPicked">Ryd</button>` : "";
 }
 
 function renderWeights() {
@@ -692,7 +671,6 @@ function applyColor() {
   swatches.forEach((s) => s.setAttribute("aria-pressed", s === pressed));
   const isCustom = ![...SWATCHES, ...state.theme].some((s) => s.hex === state.hex);
   document.querySelector(".swatch.custom").setAttribute("aria-pressed", isCustom);
-  if (document.activeElement !== $("hex")) $("hex").value = state.hex;
   $("picker").value = "#" + state.hex;
   if (targets().length) renderSelection();
 }
@@ -740,7 +718,6 @@ function setSize(v) {
   if (isNaN(v)) return;
   state.size = v;
   store.set("sizeCm", v);
-  $("size").value = String(v).replace(".", ",");
 }
 
 function iconSvg(name) {
@@ -822,14 +799,11 @@ function toast(msg) {
 // ---------- Events ----------
 function wire() {
   // Swatches
-  $("colors").insertAdjacentHTML("afterbegin", SWATCHES.map((s, i) => swatchHtml(s.hex, s.name, "s" + i)).join(""));
+  renderColorRow();
   document.querySelector(".top").addEventListener("click", (e) => {
     const s = e.target.closest(".swatch[data-hex]");
     if (s) { state.swatchKey = s.dataset.key; setColor(s.dataset.hex); }
   });
-  $("picker").addEventListener("input", (e) => setColor(e.target.value));
-  $("hex").addEventListener("input", (e) => setColor(e.target.value));
-  $("hex").addEventListener("blur", () => { $("hex").value = state.hex; });
 
   $("weights").addEventListener("click", (e) => { const b = e.target.closest("button[data-w]"); if (b) setWeight(b.dataset.w); });
 
@@ -852,12 +826,9 @@ function wire() {
     if (c && !(e.ctrlKey || e.metaKey || e.shiftKey)) insert([c.dataset.name]);
   });
   $("insert").addEventListener("click", () => insert());
-  $("selSub").addEventListener("click", (e) => { if (e.target.id === "clearPicked") select(state.selected, false); });
+  $("pickedInfo").addEventListener("click", (e) => { if (e.target.id === "clearPicked") select(state.selected, false); });
   $("suggestRefresh").addEventListener("click", () => refreshSuggestions(true));
 
-  $("size").addEventListener("change", (e) => setSize(parseFloat(e.target.value.replace(",", "."))));
-  $("sizeDown").addEventListener("click", () => setSize(state.size - 0.5));
-  $("sizeUp").addEventListener("click", () => setSize(state.size + 0.5));
 
   // Piletaster flytter markeringen, Enter indsætter, "/" går til søgning.
   document.addEventListener("keydown", (e) => {

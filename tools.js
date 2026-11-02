@@ -51,6 +51,7 @@ function agendaScan() {
 async function agendaInsert(items, each) {
   const chosen = items.filter((it) => it.on && it.title.trim());
   if (!chosen.length) throw new Error("Vælg mindst ét punkt");
+  const tpl = await dbDo("data", "readonly", (st) => st.get("_agendaTemplate")).catch(() => null);
   await run(async (ctx) => {
     // Fjern agendaer, Kvadrant har lavet før.
     let slides = ctx.presentation.slides;
@@ -78,9 +79,67 @@ async function agendaInsert(items, each) {
     const jobs = each ? chosen.map((c, k) => ({ at: ids.indexOf(c.id), active: k })).filter((j) => j.at >= 0)
       : [{ at: after, active: -1 }];
     jobs.sort((a, b) => b.at - a.at);   // bagfra, så de øvrige pladser ikke flytter sig
-    for (const j of jobs) await addAgendaSlide(ctx, layout.id, ref.slideMaster.id, chosen, j.active, j.at);
+    for (const j of jobs) {
+      if (tpl) await addFromTemplate(ctx, tpl.data, chosen, j.active, j.at);
+      else await addAgendaSlide(ctx, layout.id, ref.slideMaster.id, chosen, j.active, j.at);
+    }
   });
   return each ? chosen.length : 1;
+}
+
+// Gemmer den markerede slide som agenda-design (samme IndexedDB som slidebanken, id "_agendaTemplate").
+async function agendaTemplateSave() {
+  const rec = await run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    sel.load("items/id");
+    await ctx.sync();
+    const slide = sel.items[0];
+    if (!slide) throw new Error("Markér agenda-sliden i oversigten til venstre");
+    const data = slide.exportAsBase64();
+    const img = slide.getImageAsBase64({ width: 400 });
+    await ctx.sync();
+    return { data: data.value, thumb: img.value, title: titleOf(await slideTexts(ctx, slide)) || "Agenda" };
+  });
+  await dbDo("data", "readwrite", (st) => st.put({ id: "_agendaTemplate", data: rec.data }));
+  await dbDo("meta", "readwrite", (st) => st.put({ id: "_agendaTemplate", title: rec.title, thumb: rec.thumb, source: "_", added: Date.now() }));
+  return rec.title;
+}
+
+// Agenda i skabelonens design: sliden sættes ind, og listen ("01 …", "02 …") skrives om med de valgte punkter.
+// Formateringen fra skabelonens første linje bevares; ved et aktivt afsnit gråtones de andre linjer.
+async function addFromTemplate(ctx, data, items, active, at) {
+  const slides = ctx.presentation.slides;
+  slides.load("items/id");
+  await ctx.sync();
+  const before = new Set(slides.items.map((s) => s.id));
+  const opts = { formatting: "KeepSourceFormatting" };
+  if (at > 0 && slides.items[at - 1]) opts.targetSlideId = slides.items[at - 1].id;
+  ctx.presentation.insertSlidesFromBase64(data, opts);
+  await ctx.sync();
+  const after = ctx.presentation.slides;
+  after.load("items/id");
+  await ctx.sync();
+  const slide = after.items.find((s) => !before.has(s.id));
+  if (!slide) return;
+  if (at === 0) slide.moveTo(0);
+  slide.tags.add("KVADRANT", "agenda");
+  await ctx.sync();
+  const texts = (await slideTexts(ctx, slide)).filter((t) => t.text);
+  const lines = (t) => t.text.split(/\r\n|\r|\n|\v/).filter((l) => l.trim());
+  const list = texts.find((t) => lines(t).length > 1 && /^\s*0?1\b/.test(t.text))
+    || texts.filter((t) => !/^agenda$/i.test(t.text)).sort((a, b) => lines(b).length - lines(a).length || b.text.length - a.text.length)[0];
+  if (!list) return;
+  const out = items.map((it, i) => `${String(i + 1).padStart(2, "0")} ${it.title.trim()}`);
+  const range = list.shape.textFrame.textRange;
+  range.text = out.join("\n");
+  await ctx.sync();
+  if (active < 0) return;
+  let pos = 0;
+  out.forEach((l, i) => {
+    if (i !== active) range.getSubstring(pos, l.length).font.color = "#A3A1B3";
+    pos += l.length + 1;
+  });
+  await ctx.sync();
 }
 
 async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
@@ -362,7 +421,7 @@ async function deleteBlock(id) {
 // ---------- Det, vinduerne kan bede om ----------
 const OPS = {
   context: async () => { await ensureTheme().catch(() => {}); return { theme: state.theme, hex: state.hex, fonts: state.fonts }; },
-  agendaScan, agendaInsert,
+  agendaScan, agendaInsert, agendaTemplateSave,
   grid: (opts) => window.kvadrantGrid({ cols: opts.cols, gap: opts.gapCm * CM, same: opts.same }),
   stamp: addStamp,
   harvey: addHarvey,
@@ -413,12 +472,12 @@ function openDialog(page, view, size) {
   });
 }
 
-const TOOLS_SIZE = { width: 36, height: 72 };
+const TOOLS_SIZE = { width: 46, height: 72 };
 const SMALL_SIZE = { width: 22, height: 40 };
 const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
 function showBar() {
   if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Shift+K igen lukker
-  return openDialog("keys.html", "", { width: 55, height: 26 });
+  return openDialog("keys.html", "", { width: 50, height: 22 });
 }
 
 // ---------- Kommandoer til bånd, genveje og baren ----------
