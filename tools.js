@@ -39,7 +39,7 @@ function agendaScan() {
       const title = titleOf(texts);
       if (!title) continue;
       // Afsnits-slide: layout hedder fx "Section Header", eller en kort slide med et nummer som "01".
-      const divider = /section|afsnit|divider|sektion|kapitel|chapter/i.test(s.layout.name) ||
+      const divider = /section|afsnit|divider|sektion|kapitel|chapter|breaker/i.test(s.layout.name) ||
         (texts.length <= 3 && texts.some((t) => /^\d{1,2}$/.test(t.text)));
       found.push({ id: s.id, index: i, title, on: divider });
     }
@@ -73,7 +73,7 @@ async function agendaInsert(items, each) {
     ref.slideMaster.layouts.load("items/id,items/name");
     await ctx.sync();
     const layouts = ref.slideMaster.layouts.items;
-    const layout = layouts.find((l) => /agenda/i.test(l.name)) || layouts.find((l) => /title only|kun titel|titel alene/i.test(l.name))
+    const layout = layouts.find((l) => /agenda|table of contents|indhold/i.test(l.name)) || layouts.find((l) => /title only|kun titel|titel alene/i.test(l.name))
       || layouts.find((l) => /blank|tom/i.test(l.name)) || layouts[0];
     const after = sel.items[0] ? ids.indexOf(sel.items[0].id) + 1 : 1;
     const jobs = each ? chosen.map((c, k) => ({ at: ids.indexOf(c.id), active: k })).filter((j) => j.at >= 0)
@@ -418,6 +418,270 @@ async function deleteBlock(id) {
   await dbDo("data", "readwrite", (st) => st.delete(id));
 }
 
+// ---------- Fælles slidebank ----------
+// Slidebanken er filen "Kvadrant Slidebank.pptx" i den fælles mappe. Hver slide har skjulte mærker (tags):
+// KV_ID "GTM-03-004" (praksis-trin-løbenummer), KV_PRACTICE, KV_STEP og KV_DESC (beskrivelsen, personen skrev).
+// Når filen er åben, læses den ind i IndexedDB ("bank:<id>"), så alle præsentationer kan indsætte derfra.
+const PRACTICES = [["CT", "Commercial Transformation"], ["GTM", "Go-To-Market"], ["TS", "Transaction Services"]];
+const STEPS = [["01", "Introduktion"], ["02", "Breakers"], ["03", "Metoder & tilgang"], ["04", "Proces & tidsplan"],
+  ["05", "Analyser & frameworks"], ["06", "Cases"], ["07", "Team & investering"], ["08", "Afslutning & appendix"]];
+const BANK_TAGS = ["KV_ID", "KV_PRACTICE", "KV_STEP", "KV_DESC"];
+const isBankDoc = () => /slidebank/i.test(decodeURIComponent(Office.context.document.url || ""));
+
+async function slideTags(ctx, slides) {
+  const t = slides.map((s) => BANK_TAGS.map((k) => { const x = s.tags.getItemOrNullObject(k); x.load("value"); return x; }));
+  await ctx.sync();
+  return t.map((row) => Object.fromEntries(BANK_TAGS.map((k, i) => [k, row[i].isNullObject ? "" : row[i].value])));
+}
+
+// Mærker slides med næste ledige nummer i praksis+trin, og sorterer banken efter nummer (umærkede slides, fx forsiden, først).
+async function bankAssign(ctx, slideIds, practice, step, desc) {
+  const slides = ctx.presentation.slides;
+  slides.load("items/id");
+  await ctx.sync();
+  const tags = await slideTags(ctx, slides.items);
+  const prefix = `${practice}-${step}-`;
+  let seq = Math.max(0, ...tags.map((t) => t.KV_ID).filter((id) => id.startsWith(prefix)).map((id) => +id.slice(prefix.length) || 0));
+  const ids = [];
+  for (const sid of slideIds) {
+    const s = ctx.presentation.slides.getItem(sid);
+    const id = prefix + String(++seq).padStart(3, "0");
+    s.tags.add("KV_ID", id); s.tags.add("KV_PRACTICE", practice); s.tags.add("KV_STEP", step); s.tags.add("KV_DESC", desc || "");
+    ids.push(id);
+  }
+  await ctx.sync();
+  await bankSort(ctx);
+  return ids;
+}
+async function bankSort(ctx) {
+  const slides = ctx.presentation.slides;
+  slides.load("items/id");
+  await ctx.sync();
+  const tags = await slideTags(ctx, slides.items);
+  const order = slides.items.map((s, i) => ({ s, id: tags[i].KV_ID, i }))
+    .sort((a, b) => (!!a.id - !!b.id) || (a.id ? a.id.localeCompare(b.id) : a.i - b.i));
+  order.forEach((o, i) => o.s.moveTo(i));
+  await ctx.sync();
+}
+
+// Gemmer én bank-slide (eksport + miniature) i IndexedDB.
+async function storeBankSlide(slideId, info) {
+  const rec = await run(async (ctx) => {
+    const slide = ctx.presentation.slides.getItem(slideId);
+    const data = slide.exportAsBase64();
+    const img = slide.getImageAsBase64({ width: 400 });
+    await ctx.sync();
+    return { data: data.value, thumb: img.value, title: titleOf(await slideTexts(ctx, slide)) };
+  });
+  const key = "bank:" + info.KV_ID;
+  await dbDo("data", "readwrite", (st) => st.put({ id: key, data: rec.data }));
+  await dbDo("meta", "readwrite", (st) => st.put({ id: key, source: "bank", code: info.KV_ID, practice: info.KV_PRACTICE,
+    step: info.KV_STEP, desc: info.KV_DESC, title: rec.title || info.KV_ID, thumb: rec.thumb, added: Date.now() }));
+}
+
+async function bankStatus() {
+  const metas = await dbDo("meta", "readonly", (st) => st.getAll());
+  let synced = null;
+  try { synced = localStorage.getItem("kvadrant.bankSynced"); } catch {}
+  return { isBank: isBankDoc(), practices: PRACTICES, steps: STEPS, synced,
+    count: metas.filter((m) => m.source === "bank").length, pending: metas.filter((m) => m.source === "pending").length };
+}
+
+async function bankSync(progress) {
+  if (!isBankDoc()) throw new Error("Åbn Kvadrant Slidebank.pptx fra den fælles mappe først");
+  const recs = await run(async (ctx) => {
+    const slides = ctx.presentation.slides;
+    slides.load("items/id");
+    await ctx.sync();
+    const tags = await slideTags(ctx, slides.items);
+    return slides.items.map((s, i) => ({ slideId: s.id, ...tags[i] })).filter((r) => r.KV_ID);
+  });
+  const old = (await dbDo("meta", "readonly", (st) => st.getAll())).filter((m) => m.source === "bank");
+  for (const m of old) { await dbDo("meta", "readwrite", (st) => st.delete(m.id)); await dbDo("data", "readwrite", (st) => st.delete(m.id)); }
+  for (const [k, r] of recs.entries()) { progress(`Læser ${k + 1} af ${recs.length} …`); await storeBankSlide(r.slideId, r); }
+  try { localStorage.setItem("kvadrant.bankSynced", new Date().toISOString()); } catch {}
+  return recs.length;
+}
+
+// I slidebank-filen: mærk de markerede slides. Andre steder: læg dem i kø, til nogen åbner slidebanken.
+async function bankAdd(practice, step, desc) {
+  if (isBankDoc()) {
+    const done = await run(async (ctx) => {
+      const sel = ctx.presentation.getSelectedSlides();
+      sel.load("items/id");
+      await ctx.sync();
+      if (!sel.items.length) throw new Error("Markér de slides, der skal i slidebanken");
+      const sids = sel.items.map((s) => s.id);
+      const ids = await bankAssign(ctx, sids, practice, step, desc);
+      return sids.map((sid, i) => ({ slideId: sid, KV_ID: ids[i], KV_PRACTICE: practice, KV_STEP: step, KV_DESC: desc }));
+    });
+    for (const d of done) await storeBankSlide(d.slideId, d);
+    return { added: done.map((d) => d.KV_ID), queued: 0 };
+  }
+  const ids = await run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    sel.load("items/id");
+    await ctx.sync();
+    return sel.items.map((s) => s.id);
+  });
+  if (!ids.length) throw new Error("Markér de slides, der skal i slidebanken");
+  for (const sid of ids) {
+    const rec = await run(async (ctx) => {
+      const slide = ctx.presentation.slides.getItem(sid);
+      const data = slide.exportAsBase64();
+      const img = slide.getImageAsBase64({ width: 400 });
+      await ctx.sync();
+      return { data: data.value, thumb: img.value, title: titleOf(await slideTexts(ctx, slide)) };
+    });
+    const key = "pending:" + crypto.randomUUID();
+    await dbDo("data", "readwrite", (st) => st.put({ id: key, data: rec.data }));
+    await dbDo("meta", "readwrite", (st) => st.put({ id: key, source: "pending", practice, step, desc, title: rec.title, thumb: rec.thumb, added: Date.now() }));
+  }
+  return { added: [], queued: ids.length };
+}
+
+// I slidebank-filen: sæt slides fra køen ind, mærk dem og gem dem.
+async function bankFlush(progress) {
+  if (!isBankDoc()) throw new Error("Åbn Kvadrant Slidebank.pptx fra den fælles mappe først");
+  const pending = (await dbDo("meta", "readonly", (st) => st.getAll())).filter((m) => m.source === "pending");
+  const added = [];
+  for (const [k, p] of pending.entries()) {
+    progress(`Sætter ${k + 1} af ${pending.length} ind …`);
+    const rec = await dbDo("data", "readonly", (st) => st.get(p.id));
+    const info = await run(async (ctx) => {
+      const slides = ctx.presentation.slides;
+      slides.load("items/id");
+      await ctx.sync();
+      const before = new Set(slides.items.map((s) => s.id));
+      ctx.presentation.insertSlidesFromBase64(rec.data, { formatting: "KeepSourceFormatting", targetSlideId: slides.items[slides.items.length - 1].id });
+      await ctx.sync();
+      const after = ctx.presentation.slides;
+      after.load("items/id");
+      await ctx.sync();
+      const sid = after.items.find((s) => !before.has(s.id))?.id;
+      const [id] = await bankAssign(ctx, [sid], p.practice, p.step, p.desc);
+      return { slideId: sid, KV_ID: id, KV_PRACTICE: p.practice, KV_STEP: p.step, KV_DESC: p.desc };
+    });
+    await storeBankSlide(info.slideId, info);
+    await dbDo("meta", "readwrite", (st) => st.delete(p.id));
+    await dbDo("data", "readwrite", (st) => st.delete(p.id));
+    added.push(info.KV_ID);
+  }
+  return added;
+}
+
+// ---------- Talformat ----------
+// "1234567" / "1.234.567" / "1,2345e6" -> "1,2 mio. kr." (dansk) eller "DKK 1.2m" (engelsk).
+function parseNumber(s) {
+  s = s.replace(/[\s ]/g, "");
+  const dot = s.lastIndexOf("."), comma = s.lastIndexOf(",");
+  let dec = null;
+  if (dot >= 0 && comma >= 0) dec = dot > comma ? "." : ",";
+  else if (dot >= 0 || comma >= 0) {
+    const sep = dot >= 0 ? "." : ",", parts = s.split(sep);
+    dec = parts.length === 2 && parts[1].length !== 3 ? sep : null;   // "1.234" og "1.234.567" er tusinder, "12,5" er decimaler
+  }
+  const thou = dec === "." ? "," : dec === "," ? "." : /[.,]/.exec(s)?.[0];
+  if (thou) s = s.split(thou).join("");
+  if (dec) s = s.replace(dec, ".");
+  return parseFloat(s);
+}
+const UNITS = { da: [[1e9, "mia."], [1e6, "mio."], [1e3, "t."]], en: [[1e9, "bn"], [1e6, "m"], [1e3, "k"]] };
+function formatNumber(v, { lang = "da", unit = "auto", decimals = 1, currency = "" }) {
+  const units = UNITS[lang];
+  const [div, word] = unit === "auto" ? (units.find(([d]) => Math.abs(v) >= d) || [1, ""]) : unit === "none" ? [1, ""] : units.find(([d]) => d === +unit) || [1, ""];
+  const n = (v / div).toLocaleString(lang === "da" ? "da-DK" : "en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  if (lang === "da") return [n, word, currency].filter(Boolean).join(" ");
+  return `${currency ? currency + " " : ""}${n}${word}`;
+}
+// Tal + evt. enhed og valuta, der allerede står efter tallet ("12,5 mio kr"), som så indgår i værdien og erstattes.
+const NUM_RX = /(?<![\w.,])(-?\d{1,3}(?:[.,  ]\d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?)(?![.,]?\d)(\s*(?:mia\.?|mio\.?|millioner|million|mn|bn|t\.|k|m)(?![a-zæøå]))?(\s*(?:kr\.?|DKK|EUR|USD|€)(?![a-zæøå]))?/gi;
+const SCALE = (w) => (/^(mia|bn)/i.test(w) ? 1e9 : /^(mio|mill|mn|m)/i.test(w) ? 1e6 : /^(t|k)/i.test(w) ? 1e3 : 1);
+function reformatText(text, opts) {
+  let count = 0;
+  const out = text.replace(NUM_RX, (m, num, scale = "", cur = "") => {
+    let v = parseNumber(num);
+    if (isNaN(v)) return m;
+    scale = scale.trim(); cur = cur.trim();
+    if (!scale && !cur && /^\d{4}$/.test(num) && v >= 1900 && v <= 2100) return m;   // årstal
+    if (!scale && !cur && Math.abs(v) < 1000) return m;                             // små tal (antal, procenter) lades være
+    v *= SCALE(scale);
+    count++;
+    const currency = opts.currency === "keep" ? (cur ? cur.replace(/^kr$/i, "kr.") : "") : opts.currency;
+    return formatNumber(v, { ...opts, currency });
+  });
+  return { out, count };
+}
+async function formatNumbers(opts) {
+  return run(async (ctx) => {
+    let ranges = [];
+    const tr = ctx.presentation.getSelectedTextRangeOrNullObject();
+    tr.load("length,text");
+    await ctx.sync();
+    if (!tr.isNullObject && tr.length > 0) ranges = [tr];
+    else {
+      const sel = ctx.presentation.getSelectedShapes();
+      sel.load("items/type");
+      await ctx.sync();
+      ranges = sel.items.filter((s) => TEXTY.includes(s.type)).map((s) => s.textFrame.textRange);
+      ranges.forEach((r) => r.load("text"));
+      await ctx.sync();
+    }
+    if (!ranges.length) throw new Error("Markér teksten eller tekstboksene med tallene");
+    let total = 0;
+    for (const r of ranges) {
+      const { out, count } = reformatText(r.text, opts);
+      if (count) { r.text = out; total += count; }
+    }
+    await ctx.sync();
+    return total;
+  });
+}
+
+// ---------- Rens før afsendelse ----------
+// Office.js kan ikke slette noter og kommentarer, så filen læses, renses og åbnes som en ny præsentation (originalen røres ikke).
+async function readFileBytes() {
+  const ok = (r) => r.status === Office.AsyncResultStatus.Succeeded;
+  const file = await new Promise((res, rej) => Office.context.document.getFileAsync(Office.FileType.Compressed,
+    { sliceSize: 4194304 }, (r) => (ok(r) ? res(r.value) : rej(r.error))));
+  const slices = [];
+  try {
+    for (let i = 0; i < file.sliceCount; i++) slices.push(await new Promise((res, rej) => file.getSliceAsync(i, (r) => (ok(r) ? res(r.value.data) : rej(r.error)))));
+  } finally { file.closeAsync(); }
+  const bytes = new Uint8Array(slices.reduce((n, s) => n + s.length, 0));
+  let o = 0;
+  for (const s of slices) { bytes.set(s, o); o += s.length; }
+  return bytes;
+}
+async function cleanCopy(progress) {
+  progress("Læser præsentationen …");
+  const files = fflate.unzipSync(await readFileBytes());
+  const str = (k) => fflate.strFromU8(files[k]), put = (k, s) => { files[k] = fflate.strToU8(s); };
+  const gone = (k) => /^ppt\/(notesSlides\/|comments\/|commentAuthors\.xml$|authors\.xml$)/.test(k);
+  const notes = Object.keys(files).filter((k) => /^ppt\/notesSlides\/notesSlide\d+\.xml$/.test(k)).length;
+  const comments = Object.keys(files).filter((k) => /^ppt\/comments\/.*\.xml$/.test(k)).length;
+  progress("Fjerner noter og kommentarer …");
+  for (const k of Object.keys(files)) if (gone(k)) delete files[k];
+  const dropRel = /Type="[^"]*\/(notesSlide|comments|commentAuthors|authors)"/;
+  for (const k of Object.keys(files).filter((k) => /^ppt\/(slides\/_rels\/slide\d+\.xml|_rels\/presentation\.xml)\.rels$/.test(k))) {
+    const removed = [];
+    put(k, str(k).replace(/<Relationship\b[^>]*\/>/g, (m) => { if (!dropRel.test(m)) return m; removed.push(/Id="([^"]+)"/.exec(m)[1]); return ""; }));
+    const part = k.replace("_rels/", "").replace(/\.rels$/, "");
+    if (removed.length && files[part]) {
+      let xml = str(part);
+      for (const id of removed) xml = xml.replace(new RegExp(`<p:ext\\b(?:(?!</p:ext>)[\\s\\S])*r:id="${id}"(?:(?!</p:ext>)[\\s\\S])*</p:ext>`, "g"), "");
+      put(part, xml.replace(/<p:extLst>\s*<\/p:extLst>/g, ""));
+    }
+  }
+  put("[Content_Types].xml", str("[Content_Types].xml").replace(/<Override PartName="\/ppt\/(notesSlides|comments)\/[^"]*"[^>]*\/>|<Override PartName="\/ppt\/(commentAuthors|authors)\.xml"[^>]*\/>/g, ""));
+  progress("Åbner den rensede kopi …");
+  const zipped = fflate.zipSync(files, { level: 6 });
+  let b64 = "";
+  for (let i = 0; i < zipped.length; i += 0x8000) b64 += String.fromCharCode.apply(null, zipped.subarray(i, i + 0x8000));
+  await PowerPoint.createPresentation(btoa(b64));
+  return { notes, comments };
+}
+
 // ---------- Det, vinduerne kan bede om ----------
 const OPS = {
   context: async () => { await ensureTheme().catch(() => {}); return { theme: state.theme, hex: state.hex, fonts: state.fonts }; },
@@ -429,9 +693,11 @@ const OPS = {
   insertBlock, deleteBlock,
   check: (progress) => runCheck(progress),
   goTo, fixAll,
+  bankStatus, bankSync: (progress) => bankSync(progress), bankAdd, bankFlush: (progress) => bankFlush(progress),
+  formatNumbers, cleanCopy: (progress) => cleanCopy(progress),
 };
 // Ops, der sender fremskridt undervejs, får en progress-funktion som sidste argument.
-const WITH_PROGRESS = new Set(["saveSlides", "check"]);
+const WITH_PROGRESS = new Set(["saveSlides", "check", "bankSync", "bankFlush", "cleanCopy"]);
 
 // ---------- Vinduer ----------
 let dialog = null;

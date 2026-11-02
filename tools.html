@@ -12,6 +12,7 @@
     --shadow: 0 1px 2px rgba(38, 33, 57, .06), 0 6px 20px rgba(38, 33, 57, .10);
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; }
   body { background: var(--bg); color: var(--text); font: 13px/1.4 Inter, "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; }
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -46,6 +47,19 @@
   .key.flash kbd { background: var(--yellow); }
   .key span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .key small { flex: none; font-size: 10.5px; color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .chips.small .chip { height: 28px; padding: 0 10px; font-size: 11.5px; font-weight: 600; }
+  select, textarea { font: inherit; color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); outline: none; }
+  select { height: 34px; padding: 0 8px; }
+  textarea { width: 100%; min-height: 64px; padding: 8px 10px; resize: vertical; }
+  select:focus, textarea:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--yellow-soft); }
+  .field select { min-width: 140px; }
+  .block .code { position: absolute; top: 6px; left: 6px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; }
+  .block .d { padding: 0 8px 8px; font-size: 11px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .step-head { font-size: 12px; font-weight: 700; color: var(--ink); margin: 14px 0 8px; display: flex; gap: 8px; align-items: baseline; }
+  .step-head small { color: var(--muted); font-weight: 600; }
+  .practice-head { font-size: 15px; font-weight: 700; color: var(--ink); margin: 18px 0 2px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .practice-head:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
   .tpl { display: grid; grid-template-columns: 132px 1fr; gap: 14px; align-items: center; }
   .tpl .thumb { width: 132px; aspect-ratio: 16 / 9; border-radius: 4px; background: var(--soft); box-shadow: inset 0 0 0 1px var(--line); object-fit: cover; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 
@@ -147,8 +161,9 @@
   <button data-view="grid"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"/></svg>Gitter</button>
   <button data-view="stamps"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.57-1.47-7.63-5.37-11.57-9.14C146.27,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.57-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.73,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.14-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.14,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.14,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.14,214.31,142.11Z"/></svg>Stempler</button>
   <button data-view="harvey"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm8,16.37a86.4,86.4,0,0,1,16,3V212.67a86.4,86.4,0,0,1-16,3Zm32,9.26a87.81,87.81,0,0,1,16,10.54V195.83a87.81,87.81,0,0,1-16,10.54ZM40,128a88.11,88.11,0,0,1,80-87.63V215.63A88.11,88.11,0,0,1,40,128Zm160,50.54V77.46a87.82,87.82,0,0,1,0,101.08Z"/></svg>Harvey ball</button>
+  <button data-view="numbers"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,88H175.4l8.47-46.57a8,8,0,0,0-15.74-2.86l-9,49.43H111.4l8.47-46.57a8,8,0,0,0-15.74-2.86L95.14,88H48a8,8,0,0,0,0,16H92.23L83.5,152H32a8,8,0,0,0,0,16H80.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,80,224a8,8,0,0,0,7.86-6.57l9-49.43H144.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,144,224a8,8,0,0,0,7.86-6.57l9-49.43H208a8,8,0,0,0,0-16H163.77l8.73-48H224a8,8,0,0,0,0-16Zm-76.5,64H99.77l8.73-48h47.73Z"/></svg>Talformat</button>
   <div class="grp">Kvalitet</div>
-  <button data-view="check"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></svg>Kvadrant-tjek</button>
+  <button data-view="check"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></svg>Tjek & rens</button>
 </aside>
 
 <main>
@@ -222,25 +237,52 @@
   </section>
 
   <section id="library">
-    <div><h1>Slidebank</h1><p class="lead">Åbn fx Kvadrant Slides, markér de slides I genbruger, og gem dem her. Klik på en slide for at indsætte den.</p></div>
+    <div><h1>Slidebank</h1><p class="lead">Kvadrants fælles slides fra den delte mappe. Klik på en slide for at indsætte den efter den slide, du står på.</p></div>
     <div class="card">
-      <div class="row">
-        <button class="primary" id="libSaveSel">Gem markerede slides</button>
-        <button class="ghost" id="libSaveAll">Gem alle</button>
-      </div>
-      <label class="check"><input type="checkbox" id="libTheme"> Brug denne præsentations tema ved indsættelse</label>
+      <div class="row"><span class="hint" id="bankStatus">Henter slidebanken …</span><span class="spacer"></span>
+        <button class="ghost" id="bankFlush" hidden></button><button class="ghost" id="bankSync" hidden>Opdatér fra filen</button></div>
+      <div class="chips" id="bankPractices"></div>
+      <div class="chips small" id="bankSteps"></div>
       <div class="search">
         <svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
-        <input id="libSearch" type="text" placeholder="Søg i slidebanken" autocomplete="off" spellcheck="false">
+        <input id="libSearch" type="text" placeholder="Søg i titel, beskrivelse eller nummer, fx GTM-03" autocomplete="off" spellcheck="false">
       </div>
+      <label class="check"><input type="checkbox" id="libTheme"> Brug denne præsentations tema ved indsættelse</label>
     </div>
     <div id="libList"></div>
+    <div class="card">
+      <span class="label">Tilføj markerede slides</span>
+      <div class="row"><select id="addPractice" aria-label="Praksis"></select><select id="addStep" aria-label="Trin"></select></div>
+      <textarea id="addDesc" placeholder="Beskriv sliden med dine egne ord: hvad viser den, og hvornår bruger man den?"></textarea>
+      <div class="row"><button class="primary" id="bankAdd">Send til slidebanken</button><span class="hint" id="addHint"></span></div>
+    </div>
+  </section>
+
+  <section id="numbers">
+    <div><h1>Talformat</h1><p class="lead">Markér teksten eller tekstboksene med tallene. Fx bliver 1234567 til 1,2 mio. kr. Årstal og små tal lades være.</p></div>
+    <div class="card">
+      <div class="row">
+        <label class="field">Sprog <select id="nfLang"><option value="da">Dansk · 1,2 mio.</option><option value="en">Engelsk · 1.2m</option></select></label>
+        <label class="field">Enhed <select id="nfUnit"><option value="auto">Automatisk</option><option value="1000">Tusinder</option><option value="1000000">Millioner</option><option value="1000000000">Milliarder</option><option value="none">Ingen</option></select></label>
+      </div>
+      <div class="row">
+        <label class="field">Decimaler <select id="nfDec"><option>0</option><option selected>1</option><option>2</option></select></label>
+        <label class="field">Valuta <select id="nfCur"><option value="keep">Behold</option><option value="kr.">kr.</option><option value="DKK">DKK</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="">Ingen</option></select></label>
+      </div>
+      <div class="hint">Eksempel: 1234567 bliver <b id="nfExample"></b></div>
+      <div class="row"><button class="primary" id="nfRun">Formatér tal <kbd>Enter</kbd></button></div>
+    </div>
   </section>
 
   <section id="check">
     <div><h1>Kvadrant-tjek</h1><p class="lead">Skrifttyper og farver uden for temaet, tekst uden for sliden og tomme pladsholdere.</p></div>
     <div class="card"><div class="row"><button class="primary" id="checkRun">Tjek præsentationen</button><span class="hint" id="checkStatus"></span></div></div>
     <div id="checkResult" style="display:grid;gap:12px"></div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Rens før afsendelse</span>
+        <div class="hint" style="margin-top:4px">Fjerner speaker-noter og kommentarer i en kopi, der åbner som en ny præsentation. Originalen røres ikke. Gem kopien under et nyt navn.</div></div>
+        <button class="ghost" id="cleanRun">Lav renset kopi</button></div>
+    </div>
   </section>
 </main>
 </div>
@@ -278,7 +320,7 @@ const close = () => { if (ready) Office.context.ui.messageParent(JSON.stringify(
 const fail = (e) => toast(e?.message || "Det lykkedes ikke");
 
 // ---------- Visninger ----------
-const views = ["keys", "agenda", "grid", "stamps", "harvey", "library", "check"];
+const views = ["keys", "numbers", "agenda", "grid", "stamps", "harvey", "library", "check"];
 let ctx = { theme: [], hex: "262139" };
 function show(view) {
   if (!views.includes(view)) view = "keys";
@@ -286,7 +328,8 @@ function show(view) {
   document.querySelectorAll("main section").forEach((s) => s.classList.toggle("on", s.id === view));
   document.title = "Kvadrant · " + ($("nav").querySelector(`[data-view="${view}"]`)?.textContent || "");
   if (view === "agenda") { renderTemplate(); if (!agendaItems && ready) agendaScan(); }
-  if (view === "library") renderLibrary();
+  if (view === "library") loadBank();
+  if (view === "numbers") nfExample();
   if (view === "harvey") setTimeout(() => { $("pct").focus(); $("pct").select(); }, 50);
   if (view === "grid") setTimeout(() => $("gridCols").focus(), 50);
   current = view;
@@ -381,27 +424,76 @@ function dbGetAll() {
     };
   });
 }
+const DEF_PRACTICES = [["CT", "Commercial Transformation"], ["GTM", "Go-To-Market"], ["TS", "Transaction Services"]];
+const DEF_STEPS = [["01", "Introduktion"], ["02", "Breakers"], ["03", "Metoder & tilgang"], ["04", "Proces & tidsplan"],
+  ["05", "Analyser & frameworks"], ["06", "Cases"], ["07", "Team & investering"], ["08", "Afslutning & appendix"]];
+let bank = { isBank: false, practices: DEF_PRACTICES, steps: DEF_STEPS, count: 0, pending: 0, synced: null };
+let fPractice = "all", fStep = "all";
+async function loadBank() {
+  try { bank = { ...bank, ...(await call("bankStatus")) }; } catch {}
+  const opt = (list) => list.map(([c, n]) => `<option value="${c}">${c} · ${esc(n)}</option>`).join("");
+  if (!$("addPractice").options.length) { $("addPractice").innerHTML = opt(bank.practices); $("addStep").innerHTML = opt(bank.steps); }
+  const when = bank.synced ? new Date(bank.synced).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
+  $("bankStatus").innerHTML = bank.isBank ? "<b>Slidebank-filen er åben.</b> Mærk slides nedenfor, eller opdatér listen."
+    : bank.count ? `${bank.count} slides${when ? " · opdateret " + when : ""}. Åbn Kvadrant Slidebank.pptx i den fælles mappe for at hente nye.`
+    : "Slidebanken er ikke hentet endnu. Åbn Kvadrant Slidebank.pptx i den fælles mappe, og tryk Opdatér.";
+  $("bankSync").hidden = !bank.isBank;
+  $("bankFlush").hidden = !(bank.isBank && bank.pending);
+  $("bankFlush").textContent = `Sæt ${bank.pending} ventende ind`;
+  $("bankAdd").textContent = bank.isBank ? "Gem i slidebanken" : "Send til slidebanken";
+  $("addHint").textContent = bank.isBank ? "Får næste ledige nummer, fx GTM-03-004" : (bank.pending ? `${bank.pending} venter. ` : "") + "Sættes ind, næste gang nogen åbner slidebank-filen.";
+  $("bankPractices").innerHTML = [["all", "Alle"], ...bank.practices].map(([c, n]) => `<button class="chip" data-p="${c}" aria-pressed="${fPractice === c}">${esc(n)}</button>`).join("");
+  $("bankSteps").innerHTML = [["all", "Alle trin"], ...bank.steps].map(([c, n]) => `<button class="chip" data-s="${c}" aria-pressed="${fStep === c}">${c === "all" ? n : c + " " + esc(n)}</button>`).join("");
+  renderLibrary();
+}
 async function renderLibrary() {
   const q = $("libSearch").value.trim().toLowerCase();
-  const items = (await dbGetAll()).filter((it) => !it.id.startsWith("_")).filter((it) => !q || (it.title + " " + it.source).toLowerCase().includes(q)).sort((a, b) => a.added - b.added);
-  if (!items.length) {
-    $("libList").innerHTML = `<div class="hint">${q ? "Intet matcher søgningen." : "Slidebanken er tom endnu."}</div>`;
-    return;
+  const all = (await dbGetAll()).filter((it) => !it.id.startsWith("_") && it.source !== "pending");
+  const hit = (it) => !q || [it.title, it.desc, it.code, it.source].join(" ").toLowerCase().includes(q);
+  const bankItems = all.filter((it) => it.source === "bank" && (fPractice === "all" || it.practice === fPractice) && (fStep === "all" || it.step === fStep) && hit(it))
+    .sort((a, b) => a.code.localeCompare(b.code));
+  const mine = all.filter((it) => it.source !== "bank" && fPractice === "all" && fStep === "all" && hit(it));
+  const card = (it) => `<button class="block" data-id="${it.id}" title="Indsæt: ${esc(it.title)}">
+      <img src="data:image/png;base64,${it.thumb}" alt="">${it.code ? `<span class="code">${esc(it.code)}</span>` : ""}
+      <div class="t">${esc(it.title)}</div>${it.desc ? `<div class="d">${esc(it.desc)}</div>` : ""}
+      ${it.source !== "bank" ? `<span class="x" data-del="${it.id}" title="Fjern">×</span>` : ""}</button>`;
+  const name = (list, c) => list.find(([x]) => x === c)?.[1] || c;
+  let html = "";
+  for (const [pc, pn] of bank.practices) {
+    const inP = bankItems.filter((it) => it.practice === pc);
+    if (!inP.length) continue;
+    html += `<div class="practice-head">${esc(pn)}</div>`;
+    for (const [sc] of bank.steps) {
+      const inS = inP.filter((it) => it.step === sc);
+      if (inS.length) html += `<div class="step-head">${sc} ${esc(name(bank.steps, sc))}<small>${inS.length}</small></div><div class="lib-grid">${inS.map(card).join("")}</div>`;
+    }
   }
-  const groups = {};
-  items.forEach((it) => (groups[it.source] ||= []).push(it));
-  $("libList").innerHTML = Object.entries(groups).map(([src, list]) => `<div class="lib-source">${esc(src)} · ${list.length}</div>
-    <div class="lib-grid" style="margin:8px 0 14px">${list.map((it) => `<button class="block" data-id="${it.id}" title="Indsæt: ${esc(it.title)}">
-      <img src="data:image/png;base64,${it.thumb}" alt=""><div class="t">${esc(it.title)}</div>
-      <span class="x" data-del="${it.id}" title="Fjern fra slidebanken">×</span></button>`).join("")}</div>`).join("");
+  if (mine.length) html += `<div class="practice-head">Mine slides (kun på denne pc)</div><div class="lib-grid" style="margin-top:8px">${mine.map(card).join("")}</div>`;
+  $("libList").innerHTML = html || `<div class="hint">${q || fPractice !== "all" || fStep !== "all" ? "Intet matcher." : "Slidebanken er tom endnu."}</div>`;
 }
-async function saveSlides(all) {
-  const btns = [$("libSaveSel"), $("libSaveAll")];
-  btns.forEach((b) => { b.disabled = true; });
+async function bankAdd() {
+  $("bankAdd").disabled = true;
+  try {
+    const r = await call("bankAdd", $("addPractice").value, $("addStep").value, $("addDesc").value.trim());
+    toast(r.added.length ? `Gemt som ${r.added.join(", ")}` : `${r.queued} slides venter på slidebank-filen`);
+    $("addDesc").value = "";
+  } catch (e) { fail(e); } finally { $("bankAdd").disabled = false; loadBank(); }
+}
+async function bankRun(op, label) {
   progressHandler = toast;
-  try { const n = await call("saveSlides", all); toast(`Gemt ${n} slides`); }
-  catch (e) { fail(e); } finally { progressHandler = null; btns.forEach((b) => { b.disabled = false; }); renderLibrary(); }
+  try { const r = await call(op); toast(label(r)); } catch (e) { fail(e); } finally { progressHandler = null; loadBank(); }
 }
+
+// ---------- Talformat ----------
+const nfOpts = () => ({ lang: $("nfLang").value, unit: $("nfUnit").value, decimals: +$("nfDec").value, currency: $("nfCur").value });
+function nfExample() {
+  const o = nfOpts(), units = o.lang === "da" ? [[1e9, "mia."], [1e6, "mio."], [1e3, "t."]] : [[1e9, "bn"], [1e6, "m"], [1e3, "k"]];
+  const v = 1234567, [d, w] = o.unit === "auto" ? units.find(([x]) => v >= x) : o.unit === "none" ? [1, ""] : units.find(([x]) => x === +o.unit);
+  const n = (v / d).toLocaleString(o.lang === "da" ? "da-DK" : "en-US", { minimumFractionDigits: o.decimals, maximumFractionDigits: o.decimals });
+  const cur = o.currency === "keep" ? "" : o.currency;
+  $("nfExample").textContent = o.lang === "da" ? [n, w, cur].filter(Boolean).join(" ") : `${cur ? cur + " " : ""}${n}${w}`;
+}
+const runNumbers = () => call("formatNumbers", nfOpts()).then((n) => toast(n ? `Formateret ${n} tal` : "Fandt ingen tal at formatere"), fail);
 
 // ---------- Tjek ----------
 const CHECKS = {
@@ -462,14 +554,26 @@ $("pctRange").addEventListener("input", (e) => { $("pct").value = e.target.value
 $("hvColors").addEventListener("click", (e) => { const s = e.target.closest("[data-hex]"); if (s) { hvHex = s.dataset.hex; renderHarvey(); } });
 $("harveyInsert").addEventListener("click", insertHarvey);
 
-$("libSaveSel").addEventListener("click", () => saveSlides(false));
-$("libSaveAll").addEventListener("click", () => saveSlides(true));
 $("libSearch").addEventListener("input", renderLibrary);
+$("bankPractices").addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) { fPractice = b.dataset.p; loadBank(); } });
+$("bankSteps").addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { fStep = b.dataset.s; loadBank(); } });
+$("bankAdd").addEventListener("click", bankAdd);
+$("bankSync").addEventListener("click", () => bankRun("bankSync", (n) => `Slidebanken er opdateret: ${n} slides`));
+$("bankFlush").addEventListener("click", () => bankRun("bankFlush", (ids) => `Sat ind: ${ids.join(", ")}`));
 $("libList").addEventListener("click", (e) => {
   const del = e.target.closest("[data-del]");
   if (del) { e.stopPropagation(); call("deleteBlock", del.dataset.del).then(renderLibrary, fail); return; }
   const b = e.target.closest(".block");
   if (b) call("insertBlock", b.dataset.id, $("libTheme").checked).then(() => toast("Slide indsat"), fail);
+});
+
+["nfLang", "nfUnit", "nfDec", "nfCur"].forEach((id) => $(id).addEventListener("change", nfExample));
+$("nfRun").addEventListener("click", runNumbers);
+$("cleanRun").addEventListener("click", async () => {
+  $("cleanRun").disabled = true;
+  progressHandler = toast;
+  try { const r = await call("cleanCopy"); toast(`Renset kopi åbnet: ${r.notes} noter og ${r.comments} kommentar-filer fjernet`); }
+  catch (e) { fail(e); } finally { progressHandler = null; $("cleanRun").disabled = false; }
 });
 
 $("checkRun").addEventListener("click", runCheck);
@@ -493,6 +597,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
   if (current === "harvey") { e.preventDefault(); insertHarvey(); }
   if (current === "grid") { e.preventDefault(); runGrid(); }
+  if (current === "numbers" && !e.target.matches("select")) { e.preventDefault(); runNumbers(); }
 });
 
 // Startvisning fra adressen (tools.html#harvey); Harvey åbner som et lille vindue uden faner.
