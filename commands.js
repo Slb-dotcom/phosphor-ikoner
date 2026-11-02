@@ -144,6 +144,31 @@ function distribute(axis) {
 }
 const distributeH = distribute("h"), distributeV = distribute("v");
 
+// Gitter: objekterne tages i læserækkefølge (rækker oppefra, så venstre mod højre) og stilles fra øverste venstre hjørne.
+// cols = 0: lige så mange kolonner som den længste række, de står i nu.
+function gridCmd({ cols = 0, gap = 0.3 * 28.3465, same = false } = {}) {
+  return onShapes(2, (shapes) => {
+    const avgH = shapes.reduce((n, s) => n + s.height, 0) / shapes.length;
+    const rows = [];
+    for (const s of [...shapes].sort((a, b) => a.top - b.top)) {
+      const r = rows[rows.length - 1];
+      if (r && s.top - r[0].top < avgH / 2) r.push(s); else rows.push([s]);
+    }
+    const order = rows.flatMap((r) => r.sort((a, b) => a.left - b.left));
+    const c = cols > 0 ? cols : Math.max(...rows.map((r) => r.length));
+    const cw = Math.max(...order.map((s) => s.width)), ch = Math.max(...order.map((s) => s.height));
+    const x0 = Math.min(...order.map((s) => s.left)), y0 = Math.min(...order.map((s) => s.top));
+    order.forEach((s, i) => {
+      const w = same ? cw : s.width, h = same ? ch : s.height;
+      if (same) { s.width = cw; s.height = ch; }
+      s.left = x0 + (i % c) * (cw + gap) + (cw - w) / 2;
+      s.top = y0 + Math.floor(i / c) * (ch + gap) + (ch - h) / 2;
+    });
+  });
+}
+const gridAuto = gridCmd();
+window.kvadrantGrid = (opts) => gridCmd(opts)();
+
 // ---------- Form ----------
 // Den først markerede figur er reference.
 const sameSize = onShapes(2, ([ref, ...rest]) => rest.forEach((s) => { s.width = ref.width; s.height = ref.height; }));
@@ -221,7 +246,7 @@ const fontColor = (hex) => onText((rs) => rs.forEach((r) => { r.font.color = "#"
 // ---------- Registrering ----------
 const COMMANDS = {
   alignLeft, alignRight, alignCenter, alignTop, alignBottom, alignMiddle, centerOnSlide,
-  spaceHMore, spaceHLess, spaceVMore, spaceVLess, distributeH, distributeV,
+  spaceHMore, spaceHLess, spaceVMore, spaceVLess, distributeH, distributeV, gridAuto,
   sameSize, sameWidth, sameHeight, swapShapes, autosizeText, copyType, splitTextBox, bringToFront, sendToBack,
   fontBigger, fontSmaller, toggleBold, toggleItalic, toggleUnderline, textLeft, textCenter, textRight, textJustify, toggleBullets,
   fontColor3C2C1C: fontColor("3C2C1C"), fontColorB8862E: fontColor("B8862E"), fontColor000000: fontColor("000000"),

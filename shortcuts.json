@@ -104,6 +104,21 @@
    "id": "sendToBack",
    "type": "ExecuteFunction",
    "name": "Placér bagest"
+  },
+  {
+   "id": "gridAuto",
+   "type": "ExecuteFunction",
+   "name": "Stil de markerede objekter i et pænt gitter med samme afstand"
+  },
+  {
+   "id": "openCheck",
+   "type": "ExecuteFunction",
+   "name": "Tjek skrifttyper, farver, tekst uden for sliden og tomme pladsholdere"
+  },
+  {
+   "id": "showBar",
+   "type": "ExecuteFunction",
+   "name": "Vis alle Kvadrant-genveje i en lille bar"
   }
  ],
  "shortcuts": [
@@ -231,6 +246,24 @@
    "action": "sendToBack",
    "key": {
     "default": "Ctrl+Alt+Shift+G"
+   }
+  },
+  {
+   "action": "gridAuto",
+   "key": {
+    "default": "Ctrl+Alt+Shift+N"
+   }
+  },
+  {
+   "action": "openCheck",
+   "key": {
+    "default": "Ctrl+Alt+Shift+K"
+   }
+  },
+  {
+   "action": "showBar",
+   "key": {
+    "default": "Ctrl+Alt+K"
    }
   }
  ]
