@@ -472,12 +472,12 @@ function openDialog(page, view, size) {
   });
 }
 
-const TOOLS_SIZE = { width: 46, height: 72 };
+const TOOLS_SIZE = { width: 52, height: 74 };
 const SMALL_SIZE = { width: 22, height: 40 };
 const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
 function showBar() {
   if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Shift+K igen lukker
-  return openDialog("keys.html", "", { width: 50, height: 22 });
+  return toolsView("keys");
 }
 
 // ---------- Kommandoer til bånd, genveje og baren ----------
@@ -487,7 +487,7 @@ const cmd = (fn) => async (event) => {
 };
 const TOOL_COMMANDS = {
   showBar: cmd(showBar),
-  openTools: cmd(() => toolsView("agenda")),
+  openTools: cmd(() => toolsView("keys")),
   openAgenda: cmd(() => toolsView("agenda")),
   openGrid: cmd(() => toolsView("grid")),
   openStamps: cmd(() => toolsView("stamps")),

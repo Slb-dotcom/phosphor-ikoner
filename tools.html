@@ -36,6 +36,16 @@
   aside button[aria-selected="true"] { background: var(--ink); color: #fff; }
   aside button[aria-selected="true"] svg { color: var(--yellow); }
   body.compact aside { display: none; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .keys .card { gap: 2px; padding: 12px 10px; align-content: start; }
+  .keys .label { padding: 0 6px 6px; }
+  .key { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 5px 6px; border-radius: 5px; font-size: 12.5px; }
+  .key:hover, .key.flash { background: var(--bg); }
+  .key kbd { flex: none; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 5px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), 0 1px 0 var(--line);
+    display: inline-grid; place-items: center; font: 700 11.5px Inter, "Segoe UI", sans-serif; color: var(--ink); }
+  .key.flash kbd { background: var(--yellow); }
+  .key span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .key small { flex: none; font-size: 10.5px; color: var(--muted); }
   .tpl { display: grid; grid-template-columns: 132px 1fr; gap: 14px; align-items: center; }
   .tpl .thumb { width: 132px; aspect-ratio: 16 / 9; border-radius: 4px; background: var(--soft); box-shadow: inset 0 0 0 1px var(--line); object-fit: cover; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 
@@ -128,6 +138,8 @@
 </header>
 <div class="shell">
 <aside id="nav">
+  <div class="grp">Hurtigt</div>
+  <button data-view="keys"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48Zm0,144H32V64H224V192Zm-16-64a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,128Zm0-32a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,96ZM72,160a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16h8A8,8,0,0,1,72,160Zm96,0a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,160Zm40,0a8,8,0,0,1-8,8h-8a8,8,0,0,1,0-16h8A8,8,0,0,1,208,160Z"/></svg>Genveje</button>
   <div class="grp">Byg</div>
   <button data-view="agenda"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H104a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM104,72H216a8,8,0,0,0,0-16H104a8,8,0,0,0,0,16ZM216,184H104a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM43.58,55.16,48,52.94V104a8,8,0,0,0,16,0V40a8,8,0,0,0-11.58-7.16l-16,8a8,8,0,0,0,7.16,14.32ZM79.77,156.72a23.73,23.73,0,0,0-9.6-15.95,24.86,24.86,0,0,0-34.11,4.7,23.63,23.63,0,0,0-3.57,6.46,8,8,0,1,0,15,5.47,7.84,7.84,0,0,1,1.18-2.13,8.76,8.76,0,0,1,12-1.59A7.91,7.91,0,0,1,63.93,159a7.64,7.64,0,0,1-1.57,5.78,1,1,0,0,0-.08.11L33.59,203.21A8,8,0,0,0,40,216H72a8,8,0,0,0,0-16H56l19.08-25.53A23.47,23.47,0,0,0,79.77,156.72Z"/></svg>Agenda</button>
   <button data-view="library"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M231.65,194.55,198.46,36.75a16,16,0,0,0-19-12.39L132.65,34.42a16.08,16.08,0,0,0-12.3,19l33.19,157.8A16,16,0,0,0,169.16,224a16.25,16.25,0,0,0,3.38-.36l46.81-10.06A16.09,16.09,0,0,0,231.65,194.55ZM136,50.15c0-.06,0-.09,0-.09l46.8-10,3.33,15.87L139.33,66Zm6.62,31.47,46.82-10.05,3.34,15.9L146,97.53Zm6.64,31.57,46.82-10.06,13.3,63.24-46.82,10.06ZM216,197.94l-46.8,10-3.33-15.87L212.67,182,216,197.85C216,197.91,216,197.94,216,197.94ZM104,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V48A16,16,0,0,0,104,32ZM56,48h48V64H56Zm0,32h48v96H56Zm48,128H56V192h48v16Z"/></svg>Slidebank</button>
@@ -140,6 +152,11 @@
 </aside>
 
 <main>
+  <section id="keys">
+    <div><h1>Genveje</h1><p class="lead">Tryk et bogstav her, mens vinduet er åbent. I PowerPoint virker de fleste også direkte med Ctrl+Skift+bogstav (vist til højre). Esc lukker.</p></div>
+    <div class="keys" id="keyList"></div>
+  </section>
+
   <section id="agenda">
     <div><h1>Agenda</h1><p class="lead">Bygges af afsnits-slides, fx "Icons · 01", i jeres eget agenda-design. Ret teksterne, før du indsætter.</p></div>
     <div class="card tpl">
@@ -261,10 +278,10 @@ const close = () => { if (ready) Office.context.ui.messageParent(JSON.stringify(
 const fail = (e) => toast(e?.message || "Det lykkedes ikke");
 
 // ---------- Visninger ----------
-const views = ["agenda", "grid", "stamps", "harvey", "library", "check"];
+const views = ["keys", "agenda", "grid", "stamps", "harvey", "library", "check"];
 let ctx = { theme: [], hex: "262139" };
 function show(view) {
-  if (!views.includes(view)) view = "agenda";
+  if (!views.includes(view)) view = "keys";
   document.querySelectorAll("#nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.view === view));
   document.querySelectorAll("main section").forEach((s) => s.classList.toggle("on", s.id === view));
   document.title = "Kvadrant · " + ($("nav").querySelector(`[data-view="${view}"]`)?.textContent || "");
@@ -275,6 +292,39 @@ function show(view) {
   current = view;
 }
 let current = "agenda";
+
+// ---------- Genveje ----------
+// [tast, tekst, kommando, direkte genvej i PowerPoint, bliv åben (kan gentages)]
+const CS = "Ctrl+Skift+", CAS = "Ctrl+Alt+Skift+";
+const KEY_GROUPS = [
+  ["Juster", [["L", "Venstre", "alignLeft", CS], ["E", "Centrér vandret", "alignCenter", CS], ["R", "Højre", "alignRight", CS],
+              ["T", "Top", "alignTop", CS], ["M", "Centrér lodret", "alignMiddle", CS], ["B", "Bund", "alignBottom", CS], ["O", "Midt på sliden", "centerOnSlide", CS]]],
+  ["Afstand", [["→", "Øg vandret", "spaceHMore", CAS, 1], ["←", "Mindsk vandret", "spaceHLess", CAS, 1], ["↓", "Øg lodret", "spaceVMore", CAS, 1],
+               ["↑", "Mindsk lodret", "spaceVLess", CAS, 1], ["J", "Fordel vandret", "distributeH", CS], ["U", "Fordel lodret", "distributeV", CS], ["N", "Gitter", "gridAuto", CS]]],
+  ["Form", [["S", "Samme størrelse", "sameSize", CS], ["W", "Samme bredde", "sameWidth", CS], ["Y", "Samme højde", "sameHeight", CS],
+            ["X", "Byt plads", "swapShapes", CS], ["Q", "Kopiér skrift", "copyType", CS], ["D", "Kopiér form", "copyShape", CS],
+            ["F", "Forrest", "bringToFront", CAS], ["G", "Bagest", "sendToBack", CAS]]],
+  ["Indsæt", [["I", "Ikonpanel", "showPane", CS], ["A", "Agenda …", "view:agenda"], ["P", "Slidebank …", "view:library"],
+              ["Z", "Udkast-stempel", "stampDraft"], ["V", "Fortroligt-stempel", "stampConfidential"], ["C", "Kilde", "stampSource"],
+              ["H", "Harvey ball …", "view:harvey"], ["K", "Kvadrant-tjek …", "view:check"]]],
+  ["Tekst", [["+", "Større tekst", "fontBigger", "", 1], ["-", "Mindre tekst", "fontSmaller", "", 1]]],
+];
+const ARROWS = { ArrowRight: "→", ArrowLeft: "←", ArrowDown: "↓", ArrowUp: "↑", "_": "-", "?": "+" };
+const byKey = {};
+$("keyList").innerHTML = KEY_GROUPS.map(([title, items]) => `<div class="card"><span class="label">${title}</span>${items.map(([k, label, cmd, direct, keep]) => {
+  byKey[k] = { cmd, keep: !!keep };
+  return `<button class="key" data-k="${esc(k)}"><kbd>${esc(k)}</kbd><span>${label}</span>${direct ? `<small>${direct}${k}</small>` : ""}</button>`;
+}).join("")}</div>`).join("");
+function fireKey(k) {
+  const hit = byKey[k];
+  if (!hit) return;
+  const b = document.querySelector(`.key[data-k="${CSS.escape(k)}"]`);
+  b?.classList.add("flash");
+  setTimeout(() => b?.classList.remove("flash"), 150);
+  if (hit.cmd.startsWith("view:")) { const v = hit.cmd.slice(5); document.body.classList.remove("compact"); show(v); return; }
+  if (ready) Office.context.ui.messageParent(JSON.stringify({ cmd: hit.cmd, keep: hit.keep }));
+}
+$("keyList").addEventListener("click", (e) => { const b = e.target.closest(".key"); if (b) fireKey(b.dataset.k); });
 
 // ---------- Agenda ----------
 let agendaItems = null;
@@ -434,13 +484,19 @@ $("checkResult").addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { close(); return; }
+  if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); close(); return; }   // Ctrl+Shift+K igen lukker
+  if (current === "keys" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.target.matches("input")) {
+    const k = ARROWS[e.key] || (e.key.length === 1 ? e.key.toUpperCase() : null);
+    if (k && byKey[k]) { e.preventDefault(); fireKey(k); }
+    return;
+  }
   if (e.key !== "Enter") return;
   if (current === "harvey") { e.preventDefault(); insertHarvey(); }
   if (current === "grid") { e.preventDefault(); runGrid(); }
 });
 
 // Startvisning fra adressen (tools.html#harvey); Harvey åbner som et lille vindue uden faner.
-const start = location.hash.slice(1) || "agenda";
+const start = location.hash.slice(1) || "keys";
 document.body.classList.toggle("compact", start === "harvey");
 renderHarvey();
 show(start);

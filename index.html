@@ -124,11 +124,9 @@
   @keyframes shimmer { to { background-position: -150% 0; } }
 
   /* ---------- Bottom: selected icon ---------- */
-  .detail {
-    border-top: 1px solid var(--line); background: var(--surface); padding: 10px 14px;
-    display: flex; justify-content: flex-end; align-items: center; gap: 12px;
-  }
-  .detail .picked-info { margin-right: auto; font-size: 12px; color: var(--muted); }
+  .detail { border-top: 1px solid var(--line); background: var(--bg); padding: 12px 14px 14px; display: grid; gap: 8px; }
+  .detail .picked-info { font-size: 12px; color: var(--muted); text-align: center; }
+  .detail .picked-info:empty { display: none; }
   .preview {
     width: 60px; height: 60px; border-radius: 12px; display: grid; place-items: center;
     background: var(--bg); color: var(--icon-color); box-shadow: inset 0 0 0 1px var(--line);
@@ -144,18 +142,19 @@
   .size input { width: 34px; border: 0; outline: 0; text-align: center; font: inherit; font-size: 12.5px; color: var(--ink); background: transparent; }
   .size span { font-size: 11.5px; color: var(--muted); padding-right: 6px; }
   .insert {
-    height: 38px; padding: 0 16px; border: 0; border-radius: var(--radius);
-    background: var(--ink); color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+    width: 100%; height: 42px; padding: 0 16px; border: 0; border-radius: var(--radius);
+    background: var(--ink); color: #fff; font-weight: 600; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: background .15s, transform .1s;
   }
   .insert svg { width: 16px; height: 16px; }
   .insert:hover { background: #17132A; }
   .insert svg { color: var(--yellow); }
   .insert:active { transform: scale(.97); }
-  .insert:disabled { opacity: .4; cursor: default; }
+  .insert:disabled { background: var(--accent-soft); color: var(--muted); cursor: default; transform: none; }
+  .insert:disabled svg { color: var(--muted); }
 
   .toast {
-    position: fixed; left: 50%; bottom: 96px; translate: -50% 12px; opacity: 0;
+    position: fixed; left: 50%; bottom: 76px; translate: -50% 12px; opacity: 0;
     background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 999px; font-size: 12.5px;
     box-shadow: var(--shadow); pointer-events: none; transition: opacity .2s, translate .2s; white-space: nowrap;
   }
@@ -248,7 +247,7 @@
     <span class="picked-info" id="pickedInfo"></span>
     <button class="insert" id="insert" disabled>
       <svg viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
-      <span id="insertLabel">Indsæt</span>
+      <span id="insertLabel">Indsæt ikon</span>
     </button>
   </div>
   </section>
@@ -640,7 +639,7 @@ function renderSelection() {
   const list = targets();
   const label = `${WEIGHT_LABELS[state.weight]} · #${state.hex}`;
   $("insert").disabled = !list.length;
-  $("insertLabel").textContent = list.length > 1 ? `Indsæt ${list.length}` : "Indsæt";
+  $("insertLabel").textContent = list.length > 1 ? `Indsæt ${list.length} ikoner` : "Indsæt ikon";
   $("pickedInfo").innerHTML = list.length > 1 ? `${list.length} valgt · <button class="link" id="clearPicked">Ryd</button>` : "";
 }
 
