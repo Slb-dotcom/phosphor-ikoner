@@ -185,7 +185,12 @@
       <div class="label">Farve</div>
       <div class="color-rows">
         <div id="themeBlock" hidden>
-          <div class="sub-label">Fra præsentationen <b id="themeName"></b></div>
+          <div class="sub-label" style="display:flex;align-items:center;gap:4px">
+            <span style="overflow:hidden;text-overflow:ellipsis">Fra præsentationen <b id="themeName"></b></span>
+            <button class="refresh" id="themeRefresh" title="Læs temaet igen" aria-label="Læs temaet igen" style="width:18px;height:18px">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path d="M228,48V96a12,12,0,0,1-12,12H168a12,12,0,0,1,0-24h19l-7.8-7.8a75.55,75.55,0,0,0-53.32-22.26h-.43A75.49,75.49,0,0,0,72.39,75.57,12,12,0,1,1,55.61,58.41a99.38,99.38,0,0,1,69.87-28.47H126A99.42,99.42,0,0,1,196.2,59.23L204,67V48a12,12,0,0,1,24,0ZM183.61,180.43a75.49,75.49,0,0,1-53.09,21.63h-.43A75.55,75.55,0,0,1,76.77,179.8L69,172H88a12,12,0,0,0,0-24H40a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V189l7.8,7.8A99.42,99.42,0,0,0,130,226.06h.56a99.38,99.38,0,0,0,69.87-28.47,12,12,0,0,0-16.78-17.16Z"/></svg>
+            </button>
+          </div>
           <div class="colors" id="themeColors"></div>
         </div>
         <div>
@@ -500,8 +505,9 @@ function renderSuggestions() {
 }
 
 // ---------- Præsentationens tema og slidestørrelse ----------
-// Office.js har ingen API til temafarver, så vi læser .pptx-filen og finder temaet for første slidemaster.
-async function readPresentation() {
+// Office.js har ingen API til temafarver, så vi læser .pptx-filen og finder temaet for slidemaster nr. masterIndex
+// (samme rækkefølge som presentation.slideMasters og sldMasterIdLst i presentation.xml).
+async function readPresentation(masterIndex = 0) {
   const ok = (r) => r.status === Office.AsyncResultStatus.Succeeded;
   const file = await new Promise((res, rej) => Office.context.document.getFileAsync(Office.FileType.Compressed,
     { sliceSize: 4194304 }, (r) => (ok(r) ? res(r.value) : rej(r.error))));
@@ -518,14 +524,20 @@ async function readPresentation() {
   const files = fflate.unzipSync(bytes, { filter: (f) =>
     /^ppt\/(presentation\.xml|_rels\/presentation\.xml\.rels|theme\/theme\d+\.xml|slideMasters\/_rels\/slideMaster\d+\.xml\.rels)$/.test(f.name) });
   const xml = (p) => files[p] && new DOMParser().parseFromString(fflate.strFromU8(files[p]), "application/xml");
-  const rel = (doc, type) => [...(doc?.getElementsByTagName("Relationship") || [])]
+  const relsOf = (doc) => [...(doc?.getElementsByTagName("Relationship") || [])];
+  const rel = (doc, type) => relsOf(doc)
     .find((r) => r.getAttribute("Type").endsWith("/" + type))?.getAttribute("Target").split("/").pop();
 
   const result = {};
-  const size = xml("ppt/presentation.xml")?.getElementsByTagName("p:sldSz")[0];
+  const pres = xml("ppt/presentation.xml");
+  const size = pres?.getElementsByTagName("p:sldSz")[0];
   if (size) result.slideSize = { w: size.getAttribute("cx") / 12700, h: size.getAttribute("cy") / 12700 };
 
-  const master = rel(xml("ppt/_rels/presentation.xml.rels"), "slideMaster");
+  const presRels = xml("ppt/_rels/presentation.xml.rels");
+  const masterIds = [...(pres?.getElementsByTagName("p:sldMasterId") || [])].map((e) => e.getAttribute("r:id"));
+  const rid = masterIds[masterIndex] || masterIds[0];
+  const master = relsOf(presRels).find((r) => r.getAttribute("Id") === rid)?.getAttribute("Target").split("/").pop()
+    || rel(presRels, "slideMaster");
   const themeFile = (master && rel(xml(`ppt/slideMasters/_rels/${master}.rels`), "theme")) || "theme1.xml";
   const scheme = xml("ppt/theme/" + themeFile)?.getElementsByTagName("a:clrScheme")[0];
   if (scheme) {
@@ -544,7 +556,12 @@ async function readPresentation() {
 const THEME_SLOTS = [["dk2", "Mørk 2"], ["accent1", "Accent 1"], ["accent2", "Accent 2"], ["accent3", "Accent 3"],
   ["accent4", "Accent 4"], ["accent5", "Accent 5"], ["accent6", "Accent 6"], ["dk1", "Tekst"], ["lt2", "Lys 2"]];
 
+let lastThemeKey = "";
 function applyTheme(theme, name) {
+  const key = theme.map((c) => c.hex).join();
+  const changed = key !== lastThemeKey;
+  lastThemeKey = key;
+  if (!changed) return;
   state.theme = theme;
   $("themeBlock").hidden = !theme.length;
   $("stdLabel").hidden = !theme.length;
@@ -843,21 +860,58 @@ async function start() {
   connectToPowerPoint();
 }
 
+// Index i presentation.slideMasters for den slide, der er valgt nu.
+function currentMasterIndex() {
+  if (!hasPptApi()) return Promise.resolve(0);
+  return PowerPoint.run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    const masters = ctx.presentation.slideMasters;
+    sel.load("items/id");
+    masters.load("items/id");
+    await ctx.sync();
+    const slide = sel.items[0];
+    if (!slide) return 0;
+    slide.slideMaster.load("id");
+    await ctx.sync();
+    return Math.max(0, masters.items.findIndex((m) => m.id === slide.slideMaster.id));
+  });
+}
+
+// Læser temaet for den valgte slides master; kun igen når masteren skifter (eller force, fx ↻).
+let lastMaster = null, themeBusy = false, lastForced = 0;
+async function refreshTheme(force = false) {
+  if (themeBusy) return;
+  if (force && Date.now() - lastForced < 5000) force = false;   // højst én fuld genlæsning pr. 5 sek.
+  if (force) lastForced = Date.now();
+  themeBusy = true;
+  try {
+    const index = await currentMasterIndex().catch(() => 0);
+    if (index === lastMaster && !force) return;
+    lastMaster = index;
+    const p = await readPresentation(index);
+    if (p.slideSize) state.slideSize = p.slideSize;
+    if (p.theme) applyTheme(p.theme, p.themeName);
+  } catch { /* panelet virker også uden tema */ } finally {
+    themeBusy = false;
+  }
+}
+
 // Tema, slidestørrelse og slide-forslag; kun når panelet kører i PowerPoint.
 function connectToPowerPoint() {
   const doc = window.Office?.context?.document;
   if (!doc?.getFileAsync) return;
-  readPresentation().then((p) => {
-    if (p.slideSize) state.slideSize = p.slideSize;
-    if (p.theme) applyTheme(p.theme, p.themeName);
-  }).catch(() => {});
+  $("themeRefresh").addEventListener("click", () => { lastForced = 0; refreshTheme(true); });
+  refreshTheme(true);
   if (!hasPptApi()) return;
   refreshSuggestions();
   let timer;
   doc.addHandlerAsync(Office.EventType.DocumentSelectionChanged, () => {
     clearTimeout(timer);
-    timer = setTimeout(() => { if (!inserting) refreshSuggestions(); }, 400);
+    timer = setTimeout(() => { if (!inserting) { refreshSuggestions(); refreshTheme(); } }, 400);
   });
+  // Når man kommer tilbage til panelet (fx efter at have skiftet tema under Design), læses temaet igen.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshTheme(true); });
+  window.addEventListener("focus", () => refreshTheme(true));
 }
 
 if (window.Office) Office.onReady(start); else start();
