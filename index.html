@@ -146,6 +146,9 @@
 
   /* ---------- Theme colours, suggestions, multi-select ---------- */
   .color-rows { display: grid; gap: 10px; }
+  #themeColors { display: grid; grid-template-columns: repeat(10, minmax(0, 26px)); gap: 5px; }
+  #themeColors .swatch { width: 100%; height: auto; aspect-ratio: 1; border-radius: 5px; }
+  #themeColors .swatch[aria-pressed="true"]::after { inset: -3px; border-radius: 7px; }
   .sub-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sub-label b { color: var(--ink); font-weight: 600; }
   .suggest-reason { font-size: 11.5px; color: var(--muted); margin: -2px 2px 8px; }
@@ -548,13 +551,14 @@ async function readPresentation(masterIndex = 0) {
       if (v && /^[0-9A-F]{6}$/i.test(v)) colors[el.localName] = v.toUpperCase();
     }
     result.themeName = scheme.getAttribute("name");
-    result.theme = THEME_SLOTS.filter(([k]) => colors[k]).map(([k, name]) => ({ hex: colors[k], name }))
-      .filter((c, i, all) => all.findIndex((x) => x.hex === c.hex) === i);
+    result.theme = THEME_SLOTS.filter(([k]) => colors[k]).map(([k, name]) => ({ hex: colors[k], name }));
   }
   return result;
 }
-const THEME_SLOTS = [["dk2", "Mørk 2"], ["accent1", "Accent 1"], ["accent2", "Accent 2"], ["accent3", "Accent 3"],
-  ["accent4", "Accent 4"], ["accent5", "Accent 5"], ["accent6", "Accent 6"], ["dk1", "Tekst"], ["lt2", "Lys 2"]];
+// Samme 10 farver og rækkefølge som øverste række i PowerPoints farvevælger.
+const THEME_SLOTS = [["lt1", "Baggrund 1"], ["dk1", "Tekst 1"], ["lt2", "Baggrund 2"], ["dk2", "Tekst 2"],
+  ["accent1", "Accent 1"], ["accent2", "Accent 2"], ["accent3", "Accent 3"], ["accent4", "Accent 4"],
+  ["accent5", "Accent 5"], ["accent6", "Accent 6"]];
 
 let lastThemeKey = "";
 function applyTheme(theme, name) {
@@ -566,15 +570,17 @@ function applyTheme(theme, name) {
   $("themeBlock").hidden = !theme.length;
   $("stdLabel").hidden = !theme.length;
   $("themeName").textContent = name || "";
-  $("themeColors").innerHTML = theme.map((c) => swatchHtml(c.hex, c.name)).join("");
+  $("themeColors").innerHTML = theme.map((c, i) => swatchHtml(c.hex, c.name, "t" + i)).join("");
   // Forbind automatisk til temaet: brug Accent 1, medmindre den valgte farve allerede er en temafarve.
   if (theme.length && !theme.some((c) => c.hex === state.hex)) {
-    setColor((theme.find((c) => c.name === "Accent 1") || theme[0]).hex);
+    const accent = theme.findIndex((c) => c.name === "Accent 1");
+    state.swatchKey = "t" + Math.max(0, accent);
+    setColor(theme[Math.max(0, accent)].hex);
   } else applyColor();
 }
 
-const swatchHtml = (hex, name) =>
-  `<button class="swatch" data-hex="${hex}" title="${name} · #${hex}" aria-label="${name}" style="background:#${hex}"></button>`;
+const swatchHtml = (hex, name, key) =>
+  `<button class="swatch" data-hex="${hex}" data-key="${key}" title="${name} · #${hex}" aria-label="${name}" style="background:#${hex}"></button>`;
 
 // ---------- Rendering ----------
 function cellsHtml(names, icons) {
@@ -650,8 +656,11 @@ async function loadGlyphs() {
 function applyColor() {
   document.body.style.setProperty("--icon-color", "#" + state.hex);
   document.body.classList.toggle("light-icons", luminance(state.hex) > 0.8);
-  document.querySelectorAll(".swatch[data-hex]").forEach((s) =>
-    s.setAttribute("aria-pressed", s.dataset.hex === state.hex));
+  // Kun ét felt markeres, også når flere temafarver er ens: det man klikkede på, ellers det første match.
+  const swatches = [...document.querySelectorAll(".swatch[data-hex]")];
+  const pressed = swatches.find((s) => s.dataset.key === state.swatchKey && s.dataset.hex === state.hex)
+    || swatches.find((s) => s.dataset.hex === state.hex);
+  swatches.forEach((s) => s.setAttribute("aria-pressed", s === pressed));
   const isCustom = ![...SWATCHES, ...state.theme].some((s) => s.hex === state.hex);
   document.querySelector(".swatch.custom").setAttribute("aria-pressed", isCustom);
   if (document.activeElement !== $("hex")) $("hex").value = state.hex;
@@ -784,8 +793,11 @@ function toast(msg) {
 // ---------- Events ----------
 function wire() {
   // Swatches
-  $("colors").insertAdjacentHTML("afterbegin", SWATCHES.map((s) => swatchHtml(s.hex, s.name)).join(""));
-  document.querySelector(".top").addEventListener("click", (e) => { const s = e.target.closest(".swatch[data-hex]"); if (s) setColor(s.dataset.hex); });
+  $("colors").insertAdjacentHTML("afterbegin", SWATCHES.map((s, i) => swatchHtml(s.hex, s.name, "s" + i)).join(""));
+  document.querySelector(".top").addEventListener("click", (e) => {
+    const s = e.target.closest(".swatch[data-hex]");
+    if (s) { state.swatchKey = s.dataset.key; setColor(s.dataset.hex); }
+  });
   $("picker").addEventListener("input", (e) => setColor(e.target.value));
   $("hex").addEventListener("input", (e) => setColor(e.target.value));
   $("hex").addEventListener("blur", () => { $("hex").value = state.hex; });
