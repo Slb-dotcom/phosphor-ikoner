@@ -417,7 +417,7 @@ const TOOLS_SIZE = { width: 36, height: 72 };
 const SMALL_SIZE = { width: 22, height: 40 };
 const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
 function showBar() {
-  if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Alt+K igen lukker
+  if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Shift+K igen lukker
   return openDialog("keys.html", "", { width: 55, height: 26 });
 }
 

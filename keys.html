@@ -62,7 +62,7 @@ function fire(k) {
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { send({ close: true }); return; }
-  if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "k") { send({ close: true }); return; }   // Ctrl+Alt+K igen lukker
+  if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { send({ close: true }); return; }   // Ctrl+Shift+K igen lukker
   const k = KEYS[e.key] || (e.key.length === 1 ? e.key.toUpperCase() : null);
   if (k && byKey[k]) { e.preventDefault(); fire(k); }
 });

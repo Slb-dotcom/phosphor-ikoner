@@ -263,7 +263,7 @@
   {
    "action": "showBar",
    "key": {
-    "default": "Ctrl+Alt+K"
+    "default": "Ctrl+Shift+K"
    }
   }
  ],
