@@ -483,7 +483,9 @@ async function bankStatus() {
   const metas = await dbDo("meta", "readonly", (st) => st.getAll());
   let synced = null;
   try { synced = localStorage.getItem("kvadrant.bankSynced"); } catch {}
-  return { isBank: isBankDoc(), practices: PRACTICES, steps: STEPS, synced,
+  let bankUrl = null;
+  try { bankUrl = localStorage.getItem("kvadrant.bankUrl"); } catch {}
+  return { isBank: isBankDoc(), practices: PRACTICES, steps: STEPS, synced, canOpen: !!bankUrl,
     count: metas.filter((m) => m.source === "bank").length, pending: metas.filter((m) => m.source === "pending").length };
 }
 
@@ -769,6 +771,56 @@ const register = () => {
     window[name] = fn;
     Office.actions?.associate?.(name, fn);
   }
+  bankOnOpen();
+};
+
+// Når slidebank-filen er åben: husk dens adresse (til "Åbn slidebanken"), lad Kvadrant starte af sig selv næste gang filen
+// åbnes (gælder kun denne fil), og sæt slides fra køen ind med det samme.
+async function bankOnOpen() {
+  if (!window.Office?.context?.document || !isBankDoc()) return;
+  try { localStorage.setItem("kvadrant.bankUrl", Office.context.document.url); } catch {}
+  Office.addin?.setStartupBehavior?.(Office.StartupBehavior.load).catch(() => {});
+  try {
+    const { pending, synced } = await bankStatus();
+    if (pending) { const ids = await bankFlush(() => {}); toast(`Slidebanken: ${ids.length} nye slides sat ind (${ids.join(", ")}). Husk at gemme.`); }
+    else if (!synced) await bankSync(() => {});
+  } catch (e) { console.error(e); }
+}
+
+// Åbner slidebank-filen i PowerPoint (adressen huskes, første gang filen har været åben med Kvadrant).
+async function openBank() {
+  let url = null;
+  try { url = localStorage.getItem("kvadrant.bankUrl"); } catch {}
+  if (!url) throw new Error("Åbn Kvadrant Slidebank.pptx fra den fælles mappe én gang, så husker Kvadrant den");
+  const target = /^https?:/i.test(url) ? "ms-powerpoint:ofe|u|" + url : "file:///" + url.replace(/\\/g, "/");
+  Office.context.ui.openBrowserWindow(target);
+}
+OPS.openBank = openBank;
+
+// Slidebank som mappe: vinduet (tools.html) skriver filerne; her eksporteres de markerede slides til IndexedDB ("outbox:…"),
+// fordi slides er for store til at sende som beskeder mellem vindue og runtime.
+OPS.exportSelected = async () => {
+  const ids = await run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    sel.load("items/id");
+    await ctx.sync();
+    return sel.items.map((s) => s.id);
+  });
+  if (!ids.length) throw new Error("Markér de slides, der skal gemmes, i oversigten til venstre");
+  const keys = [];
+  for (const sid of ids) {
+    const rec = await run(async (ctx) => {
+      const slide = ctx.presentation.slides.getItem(sid);
+      const data = slide.exportAsBase64();
+      const img = slide.getImageAsBase64({ width: 400 });
+      await ctx.sync();
+      return { data: data.value, thumb: img.value, title: titleOf(await slideTexts(ctx, slide)) };
+    });
+    const key = "outbox:" + crypto.randomUUID();
+    await dbDo("data", "readwrite", (st) => st.put({ id: key, ...rec }));
+    keys.push(key);
+  }
+  return keys;
 };
 if (window.Office) Office.onReady(register); else register();
 })();

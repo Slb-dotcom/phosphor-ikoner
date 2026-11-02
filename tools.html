@@ -5,6 +5,7 @@
 <title>Kvadrant-værktøjer</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 <style>
   :root {
     --ink: #262139; --text: #27272C; --muted: #6E6C80; --line: #E0E3EC; --bg: #F4F5F8; --surface: #fff;
@@ -240,7 +241,8 @@
     <div><h1>Slidebank</h1><p class="lead">Kvadrants fælles slides fra den delte mappe. Klik på en slide for at indsætte den efter den slide, du står på.</p></div>
     <div class="card">
       <div class="row"><span class="hint" id="bankStatus">Henter slidebanken …</span><span class="spacer"></span>
-        <button class="ghost" id="bankFlush" hidden></button><button class="ghost" id="bankSync" hidden>Opdatér fra filen</button></div>
+        <button class="ghost" id="bankFlush" hidden></button><button class="ghost" id="bankSync" hidden>Opdatér fra filen</button>
+        <button class="ghost" id="folderPick" hidden>Vælg slidebank-mappe</button><button class="ghost" id="folderRescan" hidden>Opdatér</button></div>
       <div class="chips" id="bankPractices"></div>
       <div class="chips small" id="bankSteps"></div>
       <div class="search">
@@ -254,7 +256,7 @@
       <span class="label">Tilføj markerede slides</span>
       <div class="row"><select id="addPractice" aria-label="Praksis"></select><select id="addStep" aria-label="Trin"></select></div>
       <textarea id="addDesc" placeholder="Beskriv sliden med dine egne ord: hvad viser den, og hvornår bruger man den?"></textarea>
-      <div class="row"><button class="primary" id="bankAdd">Send til slidebanken</button><span class="hint" id="addHint"></span></div>
+      <div class="row"><button class="primary" id="bankAdd">Send til slidebanken</button><button class="ghost" id="bankOpen" hidden>Åbn slidebanken</button><span class="hint" id="addHint"></span></div>
     </div>
   </section>
 
@@ -429,6 +431,174 @@ const DEF_STEPS = [["01", "Introduktion"], ["02", "Breakers"], ["03", "Metoder &
   ["05", "Analyser & frameworks"], ["06", "Cases"], ["07", "Team & investering"], ["08", "Afslutning & appendix"]];
 let bank = { isBank: false, practices: DEF_PRACTICES, steps: DEF_STEPS, count: 0, pending: 0, synced: null };
 let fPractice = "all", fStep = "all";
+// ---------- Slidebank som mappe ----------
+// Hver slide er en fil: <praksis>/<trin>/GTM-03-004 Titel.pptx, med beskrivelsen i filens egenskaber og et billede i _miniaturer.
+// Mappen vælges én gang; adgangen (FileSystemDirectoryHandle) gemmes i IndexedDB som "_bankDir".
+const FS = !!window.showDirectoryPicker;
+let dirHandle = null, folderMode = false;
+function idb(store, mode, fn) {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("kvadrant", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("meta", { keyPath: "id" }); r.result.createObjectStore("data", { keyPath: "id" }); };
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => {
+      const d = r.result, tx = d.transaction(store, mode), q = fn(tx.objectStore(store));
+      tx.oncomplete = () => { res(q?.result); d.close(); };
+      tx.onerror = () => { rej(tx.error); d.close(); };
+    };
+  });
+}
+const toB64 = (bytes) => { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const fromB64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+const xmlEsc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+const xmlUnesc = (s) => s.replace(/&(amp|lt|gt|quot|apos);/g, (m, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[e]));
+const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
+const nameOf = (list, c) => list.find(([x]) => x === c)?.[1] || c;
+const sub = async (dir, name, create = false) => { try { return await dir.getDirectoryHandle(name, { create }); } catch { return null; } };
+
+async function folderInit() {
+  if (!FS || dirHandle) return;
+  dirHandle = (await idb("meta", "readonly", (st) => st.get("_bankDir")).catch(() => null))?.handle || null;
+  folderMode = !!dirHandle;
+}
+async function folderAccess(ask) {
+  if (!dirHandle) return false;
+  let perm = await dirHandle.queryPermission({ mode: "readwrite" });
+  if (perm !== "granted" && ask) perm = await dirHandle.requestPermission({ mode: "readwrite" });
+  return perm === "granted";
+}
+// Man kan have valgt "Slidebank" eller mappen over den.
+async function bankRoot() { return (await sub(dirHandle, bank.practices[0][1])) ? dirHandle : (await sub(dirHandle, "Slidebank")) || dirHandle; }
+
+async function folderUI() {
+  await folderInit();
+  $("folderPick").hidden = folderMode;
+  $("folderRescan").hidden = !folderMode;
+  if (!folderMode) {
+    $("bankStatus").innerHTML = "Vælg den fælles mappe <b>Slidebank</b> (i SHARED FOLDER FOR PHOSPOR) én gang, så kan du gemme og hente slides herfra.";
+    $("bankSync").hidden = $("bankFlush").hidden = true;
+    $("bankAdd").textContent = "Gem i slidebanken";
+    $("addHint").textContent = "Vælg slidebank-mappen først.";
+    return;
+  }
+  const n = (await dbGetAll()).filter((m) => m.source === "folder").length;
+  let when = null;
+  try { when = localStorage.getItem("kvadrant.folderScanned"); } catch {}
+  $("bankStatus").textContent = `${n} slides i slidebank-mappen${when ? " · læst " + new Date(when).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}`;
+  $("bankSync").hidden = $("bankFlush").hidden = true;
+  if ($("bankOpen")) $("bankOpen").hidden = true;
+  $("bankAdd").textContent = "Gem i slidebanken";
+  $("addHint").textContent = "Gemmes som fil i mappen med næste nummer, fx GTM-03-004 Titel.pptx";
+}
+
+async function pickFolder() {
+  try { dirHandle = await window.showDirectoryPicker({ id: "kvadrant-slidebank", mode: "readwrite" }); }
+  catch (e) { if (e.name !== "AbortError") fail(e); return; }
+  await idb("meta", "readwrite", (st) => st.put({ id: "_bankDir", source: "_", handle: dirHandle }));
+  folderMode = true;
+  await scanFolder();
+}
+
+async function scanFolder() {
+  if (!(await folderAccess(true))) { toast("Kvadrant fik ikke adgang til mappen"); return; }
+  $("bankStatus").textContent = "Læser slidebank-mappen …";
+  const root = await bankRoot();
+  const old = (await dbGetAll()).filter((m) => m.source === "folder");
+  const byId = Object.fromEntries(old.map((m) => [m.id, m]));
+  const found = new Set();
+  for (const [pc, pn] of bank.practices) {
+    const pd = await sub(root, pn);
+    if (!pd) continue;
+    for (const [sc, sn] of bank.steps) {
+      const sd = await sub(pd, `${sc} ${sn}`);
+      if (!sd) continue;
+      const thumbs = await sub(sd, "_miniaturer");
+      for await (const [fn, fh] of sd.entries()) {
+        const m = fh.kind === "file" && !fn.startsWith("~$") && /^([A-Za-z]+-\d\d-\d{3})\s*(.*?)\.pptx$/i.exec(fn);
+        if (!m) continue;
+        const code = m[1].toUpperCase(), id = "folder:" + code, file = await fh.getFile(), prev = byId[id];
+        found.add(id);
+        if (prev && prev.modified === file.lastModified && prev.file === fn) continue;
+        let title = m[2] || code, desc = "", thumb = prev?.thumb || "";
+        try {
+          const z = fflate.unzipSync(new Uint8Array(await file.arrayBuffer()), { filter: (f) => f.name === "docProps/core.xml" });
+          const x = z["docProps/core.xml"] && fflate.strFromU8(z["docProps/core.xml"]);
+          if (x) { desc = xmlUnesc(/<dc:description>([\s\S]*?)<\/dc:description>/.exec(x)?.[1] || ""); title = xmlUnesc(/<dc:title>([\s\S]*?)<\/dc:title>/.exec(x)?.[1] || "") || title; }
+        } catch {}
+        try { thumb = toB64(new Uint8Array(await (await (await thumbs.getFileHandle(code + ".png")).getFile()).arrayBuffer())); } catch {}
+        await idb("meta", "readwrite", (st) => st.put({ id, source: "folder", code, practice: pc, step: sc, title, desc, thumb,
+          file: fn, path: [pn, `${sc} ${sn}`, fn], modified: file.lastModified, added: Date.now() }));
+      }
+    }
+  }
+  for (const m of old) if (!found.has(m.id)) await idb("meta", "readwrite", (st) => st.delete(m.id));
+  try { localStorage.setItem("kvadrant.folderScanned", new Date().toISOString()); } catch {}
+  await loadBank();
+}
+
+// Sætter titel, beskrivelse og nummer i filens egenskaber (docProps/core.xml), så beskrivelsen følger filen.
+function withProps(bytes, { title, desc, code }) {
+  try {
+    const files = fflate.unzipSync(bytes);
+    const k = "docProps/core.xml";
+    if (!files[k]) return bytes;
+    let x = fflate.strFromU8(files[k]);
+    const set = (tag, v) => {
+      const re = new RegExp(`<${tag}(\\s[^>]*)?(/>|>[\\s\\S]*?</${tag}>)`);
+      const el = `<${tag}>${xmlEsc(v)}</${tag}>`;
+      x = re.test(x) ? x.replace(re, el) : x.replace("</cp:coreProperties>", el + "</cp:coreProperties>");
+    };
+    set("dc:title", title || code); set("dc:description", desc || ""); set("cp:keywords", code);
+    if (!/xmlns:dc=/.test(x)) return bytes;
+    files[k] = fflate.strToU8(x);
+    return fflate.zipSync(files, { level: 6 });
+  } catch { return bytes; }
+}
+async function writeFile(dir, name, bytes) {
+  const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+  await w.write(bytes);
+  await w.close();
+}
+
+async function saveToFolder() {
+  if (!(await folderAccess(true))) throw new Error("Giv Kvadrant adgang til slidebank-mappen");
+  const pc = $("addPractice").value, sc = $("addStep").value, desc = $("addDesc").value.trim();
+  progressHandler = toast;
+  toast("Eksporterer slides …");
+  try {
+    const keys = await call("exportSelected");
+    const root = await bankRoot();
+    const sd = await (await root.getDirectoryHandle(nameOf(bank.practices, pc), { create: true })).getDirectoryHandle(`${sc} ${nameOf(bank.steps, sc)}`, { create: true });
+    const td = await sd.getDirectoryHandle("_miniaturer", { create: true });
+    const prefix = `${pc}-${sc}-`;
+    let seq = 0;
+    for await (const [fn] of sd.entries()) if (fn.toUpperCase().startsWith(prefix)) seq = Math.max(seq, +fn.slice(prefix.length, prefix.length + 3) || 0);
+    const saved = [];
+    for (const k of keys) {
+      const rec = await idb("data", "readonly", (st) => st.get(k));
+      const code = prefix + String(++seq).padStart(3, "0");
+      toast(`Gemmer ${code} …`);
+      await writeFile(sd, `${code} ${safeName(rec.title || "Slide")}.pptx`, withProps(fromB64(rec.data), { title: rec.title, desc, code }));
+      if (rec.thumb) await writeFile(td, code + ".png", fromB64(rec.thumb));
+      await idb("data", "readwrite", (st) => st.delete(k));
+      saved.push(code);
+    }
+    toast(`Gemt i slidebanken: ${saved.join(", ")}`);
+    $("addDesc").value = "";
+  } finally { progressHandler = null; }
+  await scanFolder();
+}
+
+async function insertFromFolder(meta) {
+  if (!(await folderAccess(true))) throw new Error("Giv Kvadrant adgang til slidebank-mappen");
+  let dir = await bankRoot();
+  for (const part of meta.path.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+  const file = await (await dir.getFileHandle(meta.path[meta.path.length - 1])).getFile();
+  const data = toB64(new Uint8Array(await file.arrayBuffer()));
+  await idb("data", "readwrite", (st) => st.put({ id: "tmp:insert", data }));
+  await call("insertBlock", "tmp:insert", $("libTheme").checked);
+}
+
 async function loadBank() {
   try { bank = { ...bank, ...(await call("bankStatus")) }; } catch {}
   const opt = (list) => list.map(([c, n]) => `<option value="${c}">${c} · ${esc(n)}</option>`).join("");
@@ -441,22 +611,28 @@ async function loadBank() {
   $("bankFlush").hidden = !(bank.isBank && bank.pending);
   $("bankFlush").textContent = `Sæt ${bank.pending} ventende ind`;
   $("bankAdd").textContent = bank.isBank ? "Gem i slidebanken" : "Send til slidebanken";
-  $("addHint").textContent = bank.isBank ? "Får næste ledige nummer, fx GTM-03-004" : (bank.pending ? `${bank.pending} venter. ` : "") + "Sættes ind, næste gang nogen åbner slidebank-filen.";
+  $("bankOpen").hidden = bank.isBank || !bank.pending;
+  $("addHint").textContent = bank.isBank ? "Får næste ledige nummer, fx GTM-03-004"
+    : bank.pending ? `${bank.pending} venter. Åbn slidebanken, så sættes de ind automatisk.` : "Lægges i kø og sættes ind, når du åbner slidebank-filen.";
+  if (FS) await folderUI();
   $("bankPractices").innerHTML = [["all", "Alle"], ...bank.practices].map(([c, n]) => `<button class="chip" data-p="${c}" aria-pressed="${fPractice === c}">${esc(n)}</button>`).join("");
   $("bankSteps").innerHTML = [["all", "Alle trin"], ...bank.steps].map(([c, n]) => `<button class="chip" data-s="${c}" aria-pressed="${fStep === c}">${c === "all" ? n : c + " " + esc(n)}</button>`).join("");
   renderLibrary();
 }
+let libItems = {};
 async function renderLibrary() {
   const q = $("libSearch").value.trim().toLowerCase();
   const all = (await dbGetAll()).filter((it) => !it.id.startsWith("_") && it.source !== "pending");
   const hit = (it) => !q || [it.title, it.desc, it.code, it.source].join(" ").toLowerCase().includes(q);
-  const bankItems = all.filter((it) => it.source === "bank" && (fPractice === "all" || it.practice === fPractice) && (fStep === "all" || it.step === fStep) && hit(it))
+  libItems = Object.fromEntries(all.map((it) => [it.id, it]));
+  const bankSource = folderMode ? "folder" : "bank";
+  const bankItems = all.filter((it) => it.source === bankSource && (fPractice === "all" || it.practice === fPractice) && (fStep === "all" || it.step === fStep) && hit(it))
     .sort((a, b) => a.code.localeCompare(b.code));
-  const mine = all.filter((it) => it.source !== "bank" && fPractice === "all" && fStep === "all" && hit(it));
+  const mine = all.filter((it) => it.source !== "bank" && it.source !== "folder" && fPractice === "all" && fStep === "all" && hit(it));
   const card = (it) => `<button class="block" data-id="${it.id}" title="Indsæt: ${esc(it.title)}">
       <img src="data:image/png;base64,${it.thumb}" alt="">${it.code ? `<span class="code">${esc(it.code)}</span>` : ""}
       <div class="t">${esc(it.title)}</div>${it.desc ? `<div class="d">${esc(it.desc)}</div>` : ""}
-      ${it.source !== "bank" ? `<span class="x" data-del="${it.id}" title="Fjern">×</span>` : ""}</button>`;
+      ${it.source !== "bank" && it.source !== "folder" ? `<span class="x" data-del="${it.id}" title="Fjern">×</span>` : ""}</button>`;
   const name = (list, c) => list.find(([x]) => x === c)?.[1] || c;
   let html = "";
   for (const [pc, pn] of bank.practices) {
@@ -473,6 +649,7 @@ async function renderLibrary() {
 }
 async function bankAdd() {
   $("bankAdd").disabled = true;
+  if (folderMode) { try { await saveToFolder(); } catch (e) { fail(e); } finally { $("bankAdd").disabled = false; } return; }
   try {
     const r = await call("bankAdd", $("addPractice").value, $("addStep").value, $("addDesc").value.trim());
     toast(r.added.length ? `Gemt som ${r.added.join(", ")}` : `${r.queued} slides venter på slidebank-filen`);
@@ -558,13 +735,17 @@ $("libSearch").addEventListener("input", renderLibrary);
 $("bankPractices").addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) { fPractice = b.dataset.p; loadBank(); } });
 $("bankSteps").addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { fStep = b.dataset.s; loadBank(); } });
 $("bankAdd").addEventListener("click", bankAdd);
+$("folderPick").addEventListener("click", pickFolder);
+$("folderRescan").addEventListener("click", () => scanFolder().catch(fail));
+$("bankOpen").addEventListener("click", () => call("openBank").then(() => toast("Åbner slidebanken …"), fail));
 $("bankSync").addEventListener("click", () => bankRun("bankSync", (n) => `Slidebanken er opdateret: ${n} slides`));
 $("bankFlush").addEventListener("click", () => bankRun("bankFlush", (ids) => `Sat ind: ${ids.join(", ")}`));
 $("libList").addEventListener("click", (e) => {
   const del = e.target.closest("[data-del]");
   if (del) { e.stopPropagation(); call("deleteBlock", del.dataset.del).then(renderLibrary, fail); return; }
   const b = e.target.closest(".block");
-  if (b) call("insertBlock", b.dataset.id, $("libTheme").checked).then(() => toast("Slide indsat"), fail);
+  if (b && b.dataset.id.startsWith("folder:")) insertFromFolder(libItems[b.dataset.id]).then(() => toast("Slide indsat"), fail);
+  else if (b) call("insertBlock", b.dataset.id, $("libTheme").checked).then(() => toast("Slide indsat"), fail);
 });
 
 ["nfLang", "nfUnit", "nfDec", "nfCur"].forEach((id) => $(id).addEventListener("change", nfExample));
