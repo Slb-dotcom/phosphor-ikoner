@@ -111,6 +111,11 @@
    "name": "${resource.gridAuto}"
   },
   {
+   "id": "copyShape",
+   "type": "ExecuteFunction",
+   "name": "${resource.copyShape}"
+  },
+  {
    "id": "openCheck",
    "type": "ExecuteFunction",
    "name": "${resource.openCheck}"
@@ -255,6 +260,12 @@
    }
   },
   {
+   "action": "copyShape",
+   "key": {
+    "default": "Ctrl+Alt+Shift+D"
+   }
+  },
+  {
    "action": "openCheck",
    "key": {
     "default": "Ctrl+Alt+Shift+K"
@@ -334,6 +345,9 @@
    },
    "gridAuto": {
     "value": "Stil de markerede objekter i et gitter"
+   },
+   "copyShape": {
+    "value": "Giv de øvrige markerede figurer samme runding og håndtag som den først markerede, med samme faktiske radius uanset størrelse"
    },
    "openCheck": {
     "value": "Tjek skrifttyper, farver, tekst uden for sliden og tomme pladsholdere"

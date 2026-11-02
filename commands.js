@@ -196,6 +196,33 @@ const copyType = onShapes(2, async ([ref, ...rest], ctx) => {
   });
 });
 
+// Form (de gule håndtag) fra den først markerede til resten, så rundingen har samme faktiske radius uanset størrelse.
+// Håndtagene måles i forhold til figurens korteste side, så værdien skaleres med forholdet mellem de korteste sider.
+// Office.js kan ikke skifte figurtype, så figurerne skal være af samme type (samme antal håndtag).
+const copyShape = onShapes(2, async ([ref, ...rest], ctx) => {
+  if (!Office.context.requirements.isSetSupported("PowerPointApi", "1.10")) { window.toast?.("Kræver en nyere PowerPoint"); return; }
+  const shapes = [ref, ...rest];
+  shapes.forEach((s) => s.adjustments.load("count"));
+  await ctx.sync();
+  const n = ref.adjustments.count;
+  if (!n) { window.toast?.("Den første figur har ingen håndtag at kopiere"); return; }
+  const values = Array.from({ length: n }, (_, i) => ref.adjustments.get(i));
+  await ctx.sync();
+  const side = (s) => Math.min(s.width, s.height) || 1;
+  let done = 0;
+  for (const s of rest) {
+    if (s.adjustments.count !== n) continue;
+    const k = side(ref) / side(s);
+    values.forEach((v, i) => {
+      let x = v.value * k;
+      if (v.value >= 0 && v.value <= 0.5) x = Math.min(0.5, Math.max(0, x));   // hjørneradius kan højst være den halve side
+      s.adjustments.set(i, x);
+    });
+    done++;
+  }
+  window.toast?.(done === rest.length ? "Formen er kopieret" : `Kopieret til ${done} af ${rest.length} (de andre er en anden figurtype)`);
+});
+
 // Én tekstboks pr. afsnit, stablet i den oprindelige boks' plads.
 const splitTextBox = onShapes(1, async (shapes, ctx) => {
   for (const s of shapes.filter((x) => TEXT_TYPES.includes(x.type))) {
@@ -247,7 +274,7 @@ const fontColor = (hex) => onText((rs) => rs.forEach((r) => { r.font.color = "#"
 const COMMANDS = {
   alignLeft, alignRight, alignCenter, alignTop, alignBottom, alignMiddle, centerOnSlide,
   spaceHMore, spaceHLess, spaceVMore, spaceVLess, distributeH, distributeV, gridAuto,
-  sameSize, sameWidth, sameHeight, swapShapes, autosizeText, copyType, splitTextBox, bringToFront, sendToBack,
+  sameSize, sameWidth, sameHeight, swapShapes, autosizeText, copyType, copyShape, splitTextBox, bringToFront, sendToBack,
   fontBigger, fontSmaller, toggleBold, toggleItalic, toggleUnderline, textLeft, textCenter, textRight, textJustify, toggleBullets,
   fontColor3C2C1C: fontColor("3C2C1C"), fontColorB8862E: fontColor("B8862E"), fontColor000000: fontColor("000000"),
   fontColor7A7A7A: fontColor("7A7A7A"), fontColorFFFFFF: fontColor("FFFFFF"),
