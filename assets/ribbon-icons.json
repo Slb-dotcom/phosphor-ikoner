@@ -1,0 +1,236 @@
+[
+ {
+  "file": "rb-text-aa-regular-404040",
+  "name": "text-aa",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-t-regular-404040",
+  "name": "text-t",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-b-regular-404040",
+  "name": "text-b",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-italic-regular-404040",
+  "name": "text-italic",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-underline-regular-404040",
+  "name": "text-underline",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-align-left-regular-404040",
+  "name": "text-align-left",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-align-center-regular-404040",
+  "name": "text-align-center",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-align-right-regular-404040",
+  "name": "text-align-right",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-text-align-justify-regular-404040",
+  "name": "text-align-justify",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-list-bullets-regular-404040",
+  "name": "list-bullets",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-palette-regular-404040",
+  "name": "palette",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-circle-fill-3c2c1c",
+  "name": "circle",
+  "weight": "fill",
+  "color": "3C2C1C"
+ },
+ {
+  "file": "rb-circle-fill-b8862e",
+  "name": "circle",
+  "weight": "fill",
+  "color": "B8862E"
+ },
+ {
+  "file": "rb-circle-fill-000000",
+  "name": "circle",
+  "weight": "fill",
+  "color": "000000"
+ },
+ {
+  "file": "rb-circle-fill-7a7a7a",
+  "name": "circle",
+  "weight": "fill",
+  "color": "7A7A7A"
+ },
+ {
+  "file": "rb-circle-fill-ffffff",
+  "name": "circle",
+  "weight": "fill",
+  "color": "FFFFFF"
+ },
+ {
+  "file": "rb-align-left-regular-404040",
+  "name": "align-left",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-align-center-horizontal-regular-404040",
+  "name": "align-center-horizontal",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-align-right-regular-404040",
+  "name": "align-right",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-align-top-regular-404040",
+  "name": "align-top",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-align-center-vertical-regular-404040",
+  "name": "align-center-vertical",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-align-bottom-regular-404040",
+  "name": "align-bottom",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-out-line-horizontal-regular-404040",
+  "name": "arrows-out-line-horizontal",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-in-line-horizontal-regular-404040",
+  "name": "arrows-in-line-horizontal",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-columns-regular-404040",
+  "name": "columns",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-out-line-vertical-regular-404040",
+  "name": "arrows-out-line-vertical",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-in-line-vertical-regular-404040",
+  "name": "arrows-in-line-vertical",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-rows-regular-404040",
+  "name": "rows",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-resize-regular-404040",
+  "name": "resize",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-horizontal-regular-404040",
+  "name": "arrows-horizontal",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-vertical-regular-404040",
+  "name": "arrows-vertical",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-swap-regular-404040",
+  "name": "swap",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-split-vertical-regular-404040",
+  "name": "split-vertical",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-arrows-in-simple-regular-404040",
+  "name": "arrows-in-simple",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-paint-brush-regular-404040",
+  "name": "paint-brush",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-stack-regular-404040",
+  "name": "stack",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-selection-foreground-regular-404040",
+  "name": "selection-foreground",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-selection-background-regular-404040",
+  "name": "selection-background",
+  "weight": "regular",
+  "color": "404040"
+ },
+ {
+  "file": "rb-crosshair-simple-regular-404040",
+  "name": "crosshair-simple",
+  "weight": "regular",
+  "color": "404040"
+ }
+]
