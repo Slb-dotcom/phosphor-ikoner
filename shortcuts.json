@@ -3,121 +3,122 @@
   {
    "id": "showPane",
    "type": "ExecuteFunction",
-   "name": "Åbn ikonpanelet"
+   "name": "${resource.showPane}"
   },
   {
    "id": "alignLeft",
    "type": "ExecuteFunction",
-   "name": "Flugt til venstre efter det først markerede objekt (ét objekt: til slidens kant)"
+   "name": "${resource.alignLeft}"
   },
   {
    "id": "alignRight",
    "type": "ExecuteFunction",
-   "name": "Flugt til højre efter det først markerede objekt"
+   "name": "${resource.alignRight}"
   },
   {
    "id": "alignCenter",
    "type": "ExecuteFunction",
-   "name": "Centrér vandret efter det først markerede objekt"
+   "name": "${resource.alignCenter}"
   },
   {
    "id": "alignTop",
    "type": "ExecuteFunction",
-   "name": "Flugt i toppen efter det først markerede objekt"
+   "name": "${resource.alignTop}"
   },
   {
    "id": "alignBottom",
    "type": "ExecuteFunction",
-   "name": "Flugt i bunden efter det først markerede objekt"
+   "name": "${resource.alignBottom}"
   },
   {
    "id": "alignMiddle",
    "type": "ExecuteFunction",
-   "name": "Centrér lodret efter det først markerede objekt"
+   "name": "${resource.alignMiddle}"
   },
   {
    "id": "centerOnSlide",
    "type": "ExecuteFunction",
-   "name": "Centrér de markerede objekter på sliden"
+   "name": "${resource.centerOnSlide}"
   },
   {
    "id": "distributeH",
    "type": "ExecuteFunction",
-   "name": "Fordel objekterne jævnt vandret"
+   "name": "${resource.distributeH}"
   },
   {
    "id": "distributeV",
    "type": "ExecuteFunction",
-   "name": "Fordel objekterne jævnt lodret"
+   "name": "${resource.distributeV}"
   },
   {
    "id": "spaceHMore",
    "type": "ExecuteFunction",
-   "name": "Øg den vandrette afstand med 0,1 cm"
+   "name": "${resource.spaceHMore}"
   },
   {
    "id": "spaceHLess",
    "type": "ExecuteFunction",
-   "name": "Mindsk den vandrette afstand med 0,1 cm"
+   "name": "${resource.spaceHLess}"
   },
   {
    "id": "spaceVMore",
    "type": "ExecuteFunction",
-   "name": "Øg den lodrette afstand med 0,1 cm"
+   "name": "${resource.spaceVMore}"
   },
   {
    "id": "spaceVLess",
    "type": "ExecuteFunction",
-   "name": "Mindsk den lodrette afstand med 0,1 cm"
+   "name": "${resource.spaceVLess}"
   },
   {
    "id": "sameSize",
    "type": "ExecuteFunction",
-   "name": "Samme bredde og højde som det først markerede"
+   "name": "${resource.sameSize}"
   },
   {
    "id": "sameWidth",
    "type": "ExecuteFunction",
-   "name": "Samme bredde som det først markerede"
+   "name": "${resource.sameWidth}"
   },
   {
    "id": "sameHeight",
    "type": "ExecuteFunction",
-   "name": "Samme højde som det først markerede"
+   "name": "${resource.sameHeight}"
   },
   {
    "id": "swapShapes",
    "type": "ExecuteFunction",
-   "name": "Byt plads på to markerede objekter"
+   "name": "${resource.swapShapes}"
   },
   {
    "id": "copyType",
    "type": "ExecuteFunction",
-   "name": "Giv de øvrige markerede objekter skriften fra det først markerede"
+   "name": "${resource.copyType}"
   },
   {
    "id": "bringToFront",
    "type": "ExecuteFunction",
-   "name": "Placér forrest"
+   "name": "${resource.bringToFront}"
   },
   {
    "id": "sendToBack",
    "type": "ExecuteFunction",
-   "name": "Placér bagest"
+   "name": "${resource.sendToBack}"
   },
   {
    "id": "gridAuto",
-   "type": "ExecuteFunction"
+   "type": "ExecuteFunction",
+   "name": "${resource.gridAuto}"
   },
   {
    "id": "openCheck",
    "type": "ExecuteFunction",
-   "name": "Tjek skrifttyper, farver, tekst uden for sliden og tomme pladsholdere"
+   "name": "${resource.openCheck}"
   },
   {
    "id": "showBar",
    "type": "ExecuteFunction",
-   "name": "Vis alle Kvadrant-genveje i en lille bar"
+   "name": "${resource.showBar}"
   }
  ],
  "shortcuts": [
@@ -265,5 +266,81 @@
     "default": "Ctrl+Alt+K"
    }
   }
- ]
+ ],
+ "resources": {
+  "default": {
+   "showPane": {
+    "value": "Åbn ikonpanelet"
+   },
+   "alignLeft": {
+    "value": "Flugt til venstre efter det først markerede objekt (ét objekt: til slidens kant)"
+   },
+   "alignRight": {
+    "value": "Flugt til højre efter det først markerede objekt"
+   },
+   "alignCenter": {
+    "value": "Centrér vandret efter det først markerede objekt"
+   },
+   "alignTop": {
+    "value": "Flugt i toppen efter det først markerede objekt"
+   },
+   "alignBottom": {
+    "value": "Flugt i bunden efter det først markerede objekt"
+   },
+   "alignMiddle": {
+    "value": "Centrér lodret efter det først markerede objekt"
+   },
+   "centerOnSlide": {
+    "value": "Centrér de markerede objekter på sliden"
+   },
+   "distributeH": {
+    "value": "Fordel objekterne jævnt vandret"
+   },
+   "distributeV": {
+    "value": "Fordel objekterne jævnt lodret"
+   },
+   "spaceHMore": {
+    "value": "Øg den vandrette afstand med 0,1 cm"
+   },
+   "spaceHLess": {
+    "value": "Mindsk den vandrette afstand med 0,1 cm"
+   },
+   "spaceVMore": {
+    "value": "Øg den lodrette afstand med 0,1 cm"
+   },
+   "spaceVLess": {
+    "value": "Mindsk den lodrette afstand med 0,1 cm"
+   },
+   "sameSize": {
+    "value": "Samme bredde og højde som det først markerede"
+   },
+   "sameWidth": {
+    "value": "Samme bredde som det først markerede"
+   },
+   "sameHeight": {
+    "value": "Samme højde som det først markerede"
+   },
+   "swapShapes": {
+    "value": "Byt plads på to markerede objekter"
+   },
+   "copyType": {
+    "value": "Giv de øvrige markerede objekter skriften fra det først markerede"
+   },
+   "bringToFront": {
+    "value": "Placér forrest"
+   },
+   "sendToBack": {
+    "value": "Placér bagest"
+   },
+   "gridAuto": {
+    "value": "Stil de markerede objekter i et gitter"
+   },
+   "openCheck": {
+    "value": "Tjek skrifttyper, farver, tekst uden for sliden og tomme pladsholdere"
+   },
+   "showBar": {
+    "value": "Vis Kvadrant-genveje"
+   }
+  }
+ }
 }
