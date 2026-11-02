@@ -271,7 +271,7 @@ const DANISH = {
   strategi: "strategy target", plan: "strategy list", vision: "eye binoculars", mission: "target flag",
   kunde: "user customer", medarbejder: "users employee", ledelse: "crown leader", leder: "crown", chef: "crown",
   organisation: "tree-structure", struktur: "tree-structure", proces: "flow-arrow path", trin: "steps",
-  marked: "storefront market chart", markedsføring: "megaphone", salg: "shopping-cart sale tag", pris: "tag price",
+  salg: "shopping-cart sale tag", pris: "tag price",
   omsætning: "money chart-line-up", indtjening: "money coins", overskud: "coins money", resultat: "chart-bar trophy",
   økonomi: "money bank", budget: "calculator wallet", omkostning: "receipt money", investering: "money piggy-bank trend-up",
   finans: "bank money", bank: "bank", lån: "bank", betaling: "credit-card", faktura: "invoice receipt", kontrakt: "file-text signature",
@@ -322,6 +322,20 @@ function translate(word) {
   return [];
 }
 
+// Kvadrant-ordbog (ordbog.json): ord -> håndplukkede ikoner. Har forrang for DANISH og Phosphors egne tags,
+// så fx "marked" giver geografi, ikke grøntsager.
+let ORDBOG = {}, ORDBOG_KEYS = [];
+function curated(word) {
+  const forms = [word, ...ENDINGS.filter((e) => word.endsWith(e) && word.length - e.length >= 2).map((e) => word.slice(0, -e.length))];
+  for (const f of forms) if (ORDBOG[f]) return ORDBOG[f];
+  // Sammensatte ord: hjemmemarkedet -> hjemmemarked -> ...marked
+  for (const f of forms) {
+    const key = f.length >= 7 && ORDBOG_KEYS.find((k) => f.endsWith(k) || f.startsWith(k));
+    if (key) return ORDBOG[key];
+  }
+  return null;
+}
+
 const words = (text) => (text.toLowerCase().match(/[a-zæøå0-9]+/g) || []).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
 
 const $ = (id) => document.getElementById(id);
@@ -359,9 +373,11 @@ async function loadWeight(w) {
 
 // ---------- Search ----------
 function search(query) {
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
-    .map((t) => [t, ...translate(t)]);
-  if (!terms.length) return state.meta.map((i) => i.n);
+  const raw = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (!raw.length) return state.meta.map((i) => i.n);
+  // Ordbogens ikoner først; ord fra ordbogen oversættes ikke videre, så "marked" ikke giver butik/grønt.
+  const first = [...new Set(raw.flatMap((t) => curated(t) || []))];
+  const terms = raw.map((t) => (curated(t) ? [t] : [t, ...translate(t)]));
   const scored = [];
   for (const { n, t } of state.meta) {
     let score = 0;
@@ -378,16 +394,27 @@ function search(query) {
     }
     if (score) scored.push([score, n]);
   }
-  return scored.sort((a, b) => b[0] - a[0] || a[1].localeCompare(b[1])).map((s) => s[1]);
+  const rest = scored.sort((a, b) => b[0] - a[0] || a[1].localeCompare(b[1])).map((s) => s[1]);
+  return [...first, ...rest.filter((n) => !first.includes(n))];
 }
 
 // ---------- Slide-forslag ----------
 // Scorer ikoner efter ord på sliden (titlen tæller 3x). Navnedele vejer mere end tags,
 // og højst 2 ikoner pr. "familie" (fx arrow-*), så forslagene bliver varierede.
 function suggestFor(title, text) {
-  const keys = new Map();
+  const keys = new Map(), direct = new Map();   // direct: ikon -> { score, from } fra ordbogen
   const add = (txt, weight) => {
     for (const w of words(txt)) {
+      const picks = curated(w);
+      if (picks) {
+        picks.forEach((n, i) => {
+          const cur = direct.get(n) || { score: 0, from: new Set() };
+          cur.score += (30 - i * 3) * weight;
+          cur.from.add(w);
+          direct.set(n, cur);
+        });
+        continue;
+      }
       for (const k of new Set([w, ...translate(w)])) {
         if (k.length < 3) continue;
         const cur = keys.get(k) || { weight: 0, from: new Set() };
@@ -401,8 +428,8 @@ function suggestFor(title, text) {
   add(text, 1);
   const scored = [];
   for (const icon of state.index) {
-    let score = 0;
-    const from = new Set();
+    let score = direct.get(icon.n)?.score || 0;
+    const from = new Set(direct.get(icon.n)?.from || []);
     for (const [k, { weight, from: f }] of keys) {
       const hit = icon.n === k ? 14 : icon.parts.has(k) ? 10 : icon.tags.has(k) ? 4 : 0;
       if (hit) { score += hit * weight; f.forEach((w) => from.add(w)); }
@@ -804,6 +831,11 @@ async function start() {
   $("grid").classList.add("skeleton");
   $("grid").innerHTML = '<button class="cell"></button>'.repeat(40);
   state.meta = await (await fetch("icons/meta.json")).json();
+  try {
+    ORDBOG = Object.fromEntries(Object.entries(await (await fetch("ordbog.json", { cache: "no-cache" })).json())
+      .filter(([k, v]) => !k.startsWith("_") && Array.isArray(v)));
+    ORDBOG_KEYS = Object.keys(ORDBOG).filter((k) => k.length >= 4).sort((a, b) => b.length - a.length);
+  } catch { /* panelet virker også uden ordbog */ }
   state.index = state.meta.map(({ n, t }) => ({ n, parts: new Set(n.split("-")), tags: new Set(t.split(" ")) }));
   await setWeight(WEIGHTS.includes(state.weight) ? state.weight : "thin");
   $("search").focus();
