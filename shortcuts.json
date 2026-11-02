@@ -107,8 +107,7 @@
   },
   {
    "id": "gridAuto",
-   "type": "ExecuteFunction",
-   "name": "Stil de markerede objekter i et pænt gitter med samme afstand"
+   "type": "ExecuteFunction"
   },
   {
    "id": "openCheck",

@@ -1,26 +1,11 @@
-// Fanerne Værktøjer, Bibliotek og Tjek i panelet, plus genvejs-baren (AltGr+K).
-// Kører i samme runtime som index.html og commands.js og bruger derfra: state, toast, insertSvg, escapeHtml, hasPptApi.
+// Motoren bag pop-up-vinduet (tools.html) og genvejs-baren (keys.html).
+// Kører i panelets runtime (index.html) og bruger derfra: state, toast, insertSvg, readPresentation, applyTheme, hasPptApi.
+// Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
-const $ = (id) => document.getElementById(id);
 const run = (fn) => PowerPoint.run(fn);
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
-const num = (v, d) => { const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? d : n; };
-const fail = (e) => { console.error(e); toast("Det lykkedes ikke: " + (e?.message || "ukendt fejl")); };
-
-// ---------- Faner ----------
-function showTab(tab) {
-  document.body.dataset.tab = tab;
-  document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
-  document.querySelectorAll(".view").forEach((v) => { v.hidden = v.id !== "view-" + tab; });
-  try { localStorage.setItem("kvadrant.tab", tab); } catch {}
-  if (tab === "library") renderLibrary();
-}
-async function openTab(tab) {
-  try { await Office.addin.showAsTaskpane(); } catch (e) { console.error(e); }
-  showTab(tab);
-}
 
 // Tekst i figurerne på en slide: [{ shape, text }]
 async function slideTexts(ctx, slide) {
@@ -40,80 +25,62 @@ const titleOf = (texts) => {
 };
 
 // ---------- Agenda ----------
-let agendaItems = [];
-async function agendaScan() {
-  $("agendaList").innerHTML = '<div class="hint">Læser slides …</div>';
-  try {
-    agendaItems = await run(async (ctx) => {
-      const slides = ctx.presentation.slides;
-      slides.load("items/id");
-      await ctx.sync();
-      const tags = slides.items.map((s) => { s.layout.load("name"); const t = s.tags.getItemOrNullObject("KVADRANT"); t.load("value"); return t; });
-      await ctx.sync();
-      const found = [];
-      for (const [i, s] of slides.items.entries()) {
-        if (!tags[i].isNullObject && tags[i].value === "agenda") continue;
-        const texts = (await slideTexts(ctx, s)).filter((t) => t.text);
-        const title = titleOf(texts);
-        if (!title) continue;
-        // Afsnits-slide: layout hedder fx "Section Header", eller en kort slide med et nummer som "01".
-        const divider = /section|afsnit|divider|sektion|kapitel|chapter/i.test(s.layout.name) ||
-          (texts.length <= 3 && texts.some((t) => /^\d{1,2}$/.test(t.text)));
-        found.push({ id: s.id, index: i, title, on: divider });
-      }
-      // Ingen afsnits-slides: vis alle titler, så man selv kan vælge.
-      return found.some((f) => f.on) ? found.filter((f) => f.on) : found;
-    });
-  } catch (e) { fail(e); agendaItems = []; }
-  renderAgenda();
-}
-function renderAgenda() {
-  const list = $("agendaList");
-  if (!agendaItems.length) { list.innerHTML = '<div class="hint">Fandt ingen slides med titler.</div>'; $("agendaInsert").disabled = true; return; }
-  list.innerHTML = agendaItems.map((it, i) => `<div class="agenda-item">
-    <span class="no">${it.index + 1}</span><input type="checkbox" data-i="${i}" ${it.on ? "checked" : ""} aria-label="Med i agendaen">
-    <input type="text" data-i="${i}" value="${escapeHtml(it.title)}" aria-label="Agendapunkt"></div>`).join("");
-  $("agendaInsert").disabled = false;
+function agendaScan() {
+  return run(async (ctx) => {
+    const slides = ctx.presentation.slides;
+    slides.load("items/id");
+    await ctx.sync();
+    const tags = slides.items.map((s) => { s.layout.load("name"); const t = s.tags.getItemOrNullObject("KVADRANT"); t.load("value"); return t; });
+    await ctx.sync();
+    const found = [];
+    for (const [i, s] of slides.items.entries()) {
+      if (!tags[i].isNullObject && tags[i].value === "agenda") continue;
+      const texts = (await slideTexts(ctx, s)).filter((t) => t.text);
+      const title = titleOf(texts);
+      if (!title) continue;
+      // Afsnits-slide: layout hedder fx "Section Header", eller en kort slide med et nummer som "01".
+      const divider = /section|afsnit|divider|sektion|kapitel|chapter/i.test(s.layout.name) ||
+        (texts.length <= 3 && texts.some((t) => /^\d{1,2}$/.test(t.text)));
+      found.push({ id: s.id, index: i, title, on: divider });
+    }
+    // Ingen afsnits-slides: vis alle titler, så man selv kan vælge.
+    return found.some((f) => f.on) ? found.filter((f) => f.on) : found;
+  });
 }
 
-async function agendaInsert() {
-  const chosen = agendaItems.filter((it) => it.on);
-  if (!chosen.length) { toast("Vælg mindst ét punkt"); return; }
-  const each = $("agendaEach").checked;
-  $("agendaInsert").disabled = true;
-  try {
-    await run(async (ctx) => {
-      // Fjern agendaer, Kvadrant har lavet før.
-      let slides = ctx.presentation.slides;
-      slides.load("items/id");
-      await ctx.sync();
-      const tags = slides.items.map((s) => { const t = s.tags.getItemOrNullObject("KVADRANT"); t.load("value"); return t; });
-      await ctx.sync();
-      slides.items.forEach((s, i) => { if (!tags[i].isNullObject && tags[i].value === "agenda") s.delete(); });
-      await ctx.sync();
+async function agendaInsert(items, each) {
+  const chosen = items.filter((it) => it.on && it.title.trim());
+  if (!chosen.length) throw new Error("Vælg mindst ét punkt");
+  await run(async (ctx) => {
+    // Fjern agendaer, Kvadrant har lavet før.
+    let slides = ctx.presentation.slides;
+    slides.load("items/id");
+    await ctx.sync();
+    const tags = slides.items.map((s) => { const t = s.tags.getItemOrNullObject("KVADRANT"); t.load("value"); return t; });
+    await ctx.sync();
+    slides.items.forEach((s, i) => { if (!tags[i].isNullObject && tags[i].value === "agenda") s.delete(); });
+    await ctx.sync();
 
-      slides = ctx.presentation.slides;
-      slides.load("items/id");
-      const sel = ctx.presentation.getSelectedSlides();
-      sel.load("items/id");
-      await ctx.sync();
-      const ids = slides.items.map((s) => s.id);
-      const ref = slides.items.find((s) => s.id === chosen[0].id) || slides.items[0];
-      ref.slideMaster.load("id");
-      ref.slideMaster.layouts.load("items/id,items/name");
-      await ctx.sync();
-      const layouts = ref.slideMaster.layouts.items;
-      const layout = layouts.find((l) => /agenda/i.test(l.name)) || layouts.find((l) => /title only|kun titel|titel alene/i.test(l.name))
-        || layouts.find((l) => /blank|tom/i.test(l.name)) || layouts[0];
-      const after = sel.items[0] ? ids.indexOf(sel.items[0].id) + 1 : 1;
-      const jobs = each ? chosen.map((c, k) => ({ at: ids.indexOf(c.id), active: k })).filter((j) => j.at >= 0)
-        : [{ at: after, active: -1 }];
-      jobs.sort((a, b) => b.at - a.at);   // bagfra, så de øvrige pladser ikke flytter sig
-      for (const j of jobs) await addAgendaSlide(ctx, layout.id, ref.slideMaster.id, chosen, j.active, j.at);
-    });
-    toast(each ? `Indsat ${chosen.length} agendaer` : "Agenda indsat");
-    agendaScan();
-  } catch (e) { fail(e); } finally { $("agendaInsert").disabled = false; }
+    slides = ctx.presentation.slides;
+    slides.load("items/id");
+    const sel = ctx.presentation.getSelectedSlides();
+    sel.load("items/id");
+    await ctx.sync();
+    const ids = slides.items.map((s) => s.id);
+    const ref = slides.items.find((s) => s.id === chosen[0].id) || slides.items[0];
+    ref.slideMaster.load("id");
+    ref.slideMaster.layouts.load("items/id,items/name");
+    await ctx.sync();
+    const layouts = ref.slideMaster.layouts.items;
+    const layout = layouts.find((l) => /agenda/i.test(l.name)) || layouts.find((l) => /title only|kun titel|titel alene/i.test(l.name))
+      || layouts.find((l) => /blank|tom/i.test(l.name)) || layouts[0];
+    const after = sel.items[0] ? ids.indexOf(sel.items[0].id) + 1 : 1;
+    const jobs = each ? chosen.map((c, k) => ({ at: ids.indexOf(c.id), active: k })).filter((j) => j.at >= 0)
+      : [{ at: after, active: -1 }];
+    jobs.sort((a, b) => b.at - a.at);   // bagfra, så de øvrige pladser ikke flytter sig
+    for (const j of jobs) await addAgendaSlide(ctx, layout.id, ref.slideMaster.id, chosen, j.active, j.at);
+  });
+  return each ? chosen.length : 1;
 }
 
 async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
@@ -144,7 +111,7 @@ async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
   const top = h * 0.26, rowH = Math.min(44, (h * 0.62) / items.length), size = Math.round(Math.max(11, Math.min(20, rowH * 0.45)));
   items.forEach((it, i) => {
     const on = active < 0 || i === active;
-    const rows = [[String(i + 1).padStart(2, "0"), left, 44, on ? accent : muted], [it.title, left + 54, w * 0.7, on ? ink : muted]];
+    const rows = [[String(i + 1).padStart(2, "0"), left, 44, on ? accent : muted], [it.title.trim(), left + 54, w * 0.7, on ? ink : muted]];
     for (const [text, x, width, color] of rows) {
       const box = slide.shapes.addTextBox(text, { left: x, top: top + i * rowH, width, height: rowH });
       box.name = `Agenda ${i + 1}`;
@@ -160,14 +127,15 @@ async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
 }
 
 // ---------- Stempler ----------
-const STAMPS = [
-  { id: "stampDraft", label: "Udkast", text: "UDKAST" },
-  { id: "stampConfidential", label: "Fortroligt", text: "FORTROLIGT" },
-  { id: "stampDiscussion", label: "Til diskussion", text: "TIL DISKUSSION" },
-  { id: "stampSource", label: "Kilde", text: "Kilde: ", source: true },
-  { id: "stampSourceEn", label: "Source", text: "Source: ", source: true },
-];
-async function addStamp({ text, source }) {
+const STAMPS = {
+  stampDraft: { text: "UDKAST" },
+  stampConfidential: { text: "FORTROLIGT" },
+  stampDiscussion: { text: "TIL DISKUSSION" },
+  stampSource: { text: "Kilde: ", source: true },
+  stampSourceEn: { text: "Source: ", source: true },
+};
+async function addStamp(id) {
+  const { text, source } = STAMPS[id];
   await run(async (ctx) => {
     const slide = ctx.presentation.getSelectedSlides().getItemAt(0);
     const { w, h } = state.slideSize;
@@ -196,8 +164,8 @@ async function addStamp({ text, source }) {
   });
 }
 
-// ---------- Harvey balls ----------
-const HARVEY = [0, 25, 50, 75, 100];
+// ---------- Harvey ball ----------
+// p = 0-100 (alle værdier, fx 33); fyldet starter kl. 12 og går med uret.
 function harveySvg(p, hex, pt) {
   const r = 116, c = 128, a = (p / 100) * 2 * Math.PI;
   const x = (c + r * Math.sin(a)).toFixed(2), y = (c - r * Math.cos(a)).toFixed(2);
@@ -206,9 +174,10 @@ function harveySvg(p, hex, pt) {
   const size = pt ? `width="${pt}pt" height="${pt}pt"` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" ${size}><circle cx="${c}" cy="${c}" r="${r}" fill="#FFFFFF" stroke="#${hex}" stroke-width="12"/><g fill="#${hex}">${fill}</g></svg>`;
 }
-async function addHarvey(p) {
-  const pt = 0.7 * CM, { w, h } = state.slideSize;
-  await insertSvg(harveySvg(p, state.hex, pt), { imageLeft: (w - pt) / 2, imageTop: (h - pt) / 2, imageWidth: pt, imageHeight: pt });
+async function addHarvey(p, hex = state.hex, cm = 0.7) {
+  p = Math.max(0, Math.min(100, Number(p) || 0));
+  const pt = cm * CM, { w, h } = state.slideSize;
+  await insertSvg(harveySvg(p, hex, pt), { imageLeft: (w - pt) / 2, imageTop: (h - pt) / 2, imageWidth: pt, imageHeight: pt });
   if (hasPptApi()) {
     await run(async (ctx) => {
       const sel = ctx.presentation.getSelectedShapes();
@@ -244,123 +213,100 @@ function nearest(hex, palette) {
   }, { p: palette[0], d: Infinity }).p;
 }
 
-const CHECKS = {
-  font: { title: "Skrifttyper uden for temaet", fix: "Brug temaets skrift" },
-  color: { title: "Farver uden for paletten", fix: "Brug nærmeste temafarve" },
-  off: { title: "Uden for sliden", fix: "Flyt ind på sliden" },
-  empty: { title: "Tomme pladsholdere", fix: "Slet dem" },
-};
-let issues = null;
-
-async function runCheck() {
-  $("checkRun").disabled = true;
-  $("checkStatus").textContent = "Læser temaet …";
-  try {
-    if (!state.fonts.length || !state.theme.length) {
-      const p = await readPresentation(0).catch(() => ({}));
-      if (p.fonts?.length) state.fonts = p.fonts;
-      if (p.theme) applyTheme(p.theme, p.themeName);
-    }
-    const families = state.fonts.map((f) => f.split(" ")[0].toLowerCase());
-    const palette = state.theme.map((c) => c.hex);
-    const { w, h } = state.slideSize;
-    issues = { font: [], color: [], off: [], empty: [] };
-    await run(async (ctx) => {
-      const slides = ctx.presentation.slides;
-      slides.load("items/id");
-      await ctx.sync();
-      for (const [i, slide] of slides.items.entries()) {
-        $("checkStatus").textContent = `Slide ${i + 1} af ${slides.items.length} …`;
-        slide.shapes.load("items/id,items/name,items/type,items/left,items/top,items/width,items/height");
-        await ctx.sync();
-        const base = (s) => ({ slide: i + 1, slideId: slide.id, shapeId: s.id, name: s.name });
-        for (const s of slide.shapes.items) {
-          if (s.left < -2 || s.top < -2 || s.left + s.width > w + 2 || s.top + s.height > h + 2) issues.off.push({ ...base(s), detail: "" });
-        }
-        for (const s of slide.shapes.items.filter((x) => TEXTY.includes(x.type))) {
-          const r = s.textFrame.textRange;
-          r.load("text,font/name,font/color");
-          const fill = s.type === "GeometricShape" ? s.fill : null;
-          fill?.load("type,foregroundColor");
-          try { await ctx.sync(); } catch { continue; }
-          const text = r.text.trim();
-          if (!text) { if (s.type === "Placeholder") issues.empty.push({ ...base(s), detail: "" }); }
-          else {
-            const font = r.font.name;
-            if (font && families.length && !families.includes(font.split(" ")[0].toLowerCase())) issues.font.push({ ...base(s), detail: font, title: /title|titel/i.test(s.name) });
-            const color = r.font.color?.replace("#", "");
-            if (color && palette.length && !onPalette(color, palette)) issues.color.push({ ...base(s), detail: "#" + color, kind: "text" });
-          }
-          const fc = fill?.type === "Solid" && fill.foregroundColor?.replace("#", "");
-          if (fc && palette.length && !onPalette(fc, palette)) issues.color.push({ ...base(s), detail: "#" + fc + " (fyld)", kind: "fill", hex: fc });
-        }
-      }
-    });
-    $("checkStatus").textContent = "";
-    renderIssues();
-  } catch (e) { fail(e); $("checkStatus").textContent = ""; } finally { $("checkRun").disabled = false; }
+async function ensureTheme() {
+  if (state.fonts.length && state.theme.length) return;
+  const p = await readPresentation(0).catch(() => ({}));
+  if (p.slideSize) state.slideSize = p.slideSize;
+  if (p.fonts?.length) state.fonts = p.fonts;
+  if (p.theme) applyTheme(p.theme, p.themeName);
 }
 
-function renderIssues() {
-  const total = Object.values(issues).reduce((n, l) => n + l.length, 0);
-  const fonts = state.fonts.join(" / ");
-  $("checkResult").innerHTML = (total ? "" : `<div class="card"><b>Alt ser fint ud.</b><div class="hint">Temaets skrifter: ${escapeHtml(fonts)}</div></div>`) +
-    Object.entries(CHECKS).filter(([k]) => issues[k].length).map(([k, c]) => `<div class="card issue-group">
-      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b><button class="ghost" data-fix="${k}">${c.fix}</button></div>
-      ${issues[k].slice(0, 40).map((it, i) => `<div class="issue"><span>Slide ${it.slide} · ${escapeHtml(it.name)}${it.detail ? " · " + escapeHtml(it.detail) : ""}</span><button data-go="${k}:${i}">Gå til</button></div>`).join("")}
-      ${issues[k].length > 40 ? `<div class="hint">… og ${issues[k].length - 40} mere</div>` : ""}
-      ${k === "font" ? `<div class="hint">Temaets skrifter: ${escapeHtml(fonts)}</div>` : ""}
-    </div>`).join("");
-}
-
-async function goTo(it) {
+async function runCheck(progress) {
+  await ensureTheme();
+  const families = state.fonts.map((f) => f.split(" ")[0].toLowerCase());
+  const palette = state.theme.map((c) => c.hex);
+  const { w, h } = state.slideSize;
+  const issues = { font: [], color: [], off: [], empty: [] };
   await run(async (ctx) => {
+    const slides = ctx.presentation.slides;
+    slides.load("items/id");
+    await ctx.sync();
+    for (const [i, slide] of slides.items.entries()) {
+      progress(`Slide ${i + 1} af ${slides.items.length} …`);
+      slide.shapes.load("items/id,items/name,items/type,items/left,items/top,items/width,items/height");
+      await ctx.sync();
+      const base = (s) => ({ slide: i + 1, slideId: slide.id, shapeId: s.id, name: s.name });
+      for (const s of slide.shapes.items) {
+        if (s.left < -2 || s.top < -2 || s.left + s.width > w + 2 || s.top + s.height > h + 2) issues.off.push({ ...base(s), detail: "" });
+      }
+      for (const s of slide.shapes.items.filter((x) => TEXTY.includes(x.type))) {
+        const r = s.textFrame.textRange;
+        r.load("text,font/name,font/color");
+        const fill = s.type === "GeometricShape" ? s.fill : null;
+        fill?.load("type,foregroundColor");
+        try { await ctx.sync(); } catch { continue; }
+        const text = r.text.trim();
+        if (!text) { if (s.type === "Placeholder") issues.empty.push({ ...base(s), detail: "" }); }
+        else {
+          const font = r.font.name;
+          if (font && families.length && !families.includes(font.split(" ")[0].toLowerCase())) issues.font.push({ ...base(s), detail: font, title: /title|titel/i.test(s.name) });
+          const color = r.font.color?.replace("#", "");
+          if (color && palette.length && !onPalette(color, palette)) issues.color.push({ ...base(s), detail: "#" + color, kind: "text", hex: color });
+        }
+        const fc = fill?.type === "Solid" && fill.foregroundColor?.replace("#", "");
+        if (fc && palette.length && !onPalette(fc, palette)) issues.color.push({ ...base(s), detail: "#" + fc + " (fyld)", kind: "fill", hex: fc });
+      }
+    }
+  });
+  return { issues, fonts: state.fonts };
+}
+
+function goTo(it) {
+  return run(async (ctx) => {
     ctx.presentation.setSelectedSlides([it.slideId]);
     await ctx.sync();
     ctx.presentation.slides.getItem(it.slideId).setSelectedShapes([it.shapeId]);
     await ctx.sync();
-  }).catch(fail);
+  });
 }
 
-async function fixAll(kind) {
-  const list = issues[kind];
+async function fixAll(kind, list) {
   const [major, minor] = [state.fonts[0], state.fonts[1] || state.fonts[0]];
   const palette = state.theme.map((c) => c.hex);
   const { w, h } = state.slideSize;
-  try {
-    await run(async (ctx) => {
-      for (const it of list) {
-        const s = ctx.presentation.slides.getItem(it.slideId).shapes.getItem(it.shapeId);
-        if (kind === "font") s.textFrame.textRange.font.name = it.title ? major : minor;
-        if (kind === "color" && it.kind === "text") s.textFrame.textRange.font.color = "#" + nearest(it.detail.slice(1), palette);
-        if (kind === "color" && it.kind === "fill") s.fill.setSolidColor("#" + nearest(it.hex, palette));
-        if (kind === "empty") s.delete();
-        if (kind === "off") {
-          s.load("left,top,width,height");
-          await ctx.sync();
-          if (s.width <= w) s.left = Math.min(Math.max(0, s.left), w - s.width);
-          if (s.height <= h) s.top = Math.min(Math.max(0, s.top), h - s.height);
-        }
+  await run(async (ctx) => {
+    for (const it of list) {
+      const s = ctx.presentation.slides.getItem(it.slideId).shapes.getItem(it.shapeId);
+      if (kind === "font") s.textFrame.textRange.font.name = it.title ? major : minor;
+      if (kind === "color" && it.kind === "text") s.textFrame.textRange.font.color = "#" + nearest(it.hex, palette);
+      if (kind === "color" && it.kind === "fill") s.fill.setSolidColor("#" + nearest(it.hex, palette));
+      if (kind === "empty") s.delete();
+      if (kind === "off") {
+        s.load("left,top,width,height");
+        await ctx.sync();
+        if (s.width <= w) s.left = Math.min(Math.max(0, s.left), w - s.width);
+        if (s.height <= h) s.top = Math.min(Math.max(0, s.top), h - s.height);
       }
-      await ctx.sync();
-    });
-    toast(`Rettet ${list.length}`);
-    issues[kind] = [];
-    renderIssues();
-  } catch (e) { fail(e); }
+    }
+    await ctx.sync();
+  });
+  return list.length;
 }
 
 // ---------- Bibliotek (byggeklodser) ----------
-// Gemmes lokalt i IndexedDB: "meta" (titel, miniature) og "data" (slidens .pptx som base64) hver for sig,
-// så listen ikke skal læse de store filer.
-const db = new Promise((res, rej) => {
-  const r = indexedDB.open("kvadrant", 1);
-  r.onupgradeneeded = () => { r.result.createObjectStore("meta", { keyPath: "id" }); r.result.createObjectStore("data", { keyPath: "id" }); };
-  r.onsuccess = () => res(r.result);
-  r.onerror = () => rej(r.error);
-});
+// IndexedDB "kvadrant": "meta" (titel, miniature) og "data" (slidens .pptx som base64) hver for sig, så listen er hurtig.
+// tools.html læser listen direkte (samme domæne); her gemmes og indsættes.
+let dbPromise;
+function db() {
+  return (dbPromise ||= new Promise((res, rej) => {
+    const r = indexedDB.open("kvadrant", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("meta", { keyPath: "id" }); r.result.createObjectStore("data", { keyPath: "id" }); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+}
 async function dbDo(store, mode, fn) {
-  const d = await db;
+  const d = await db();
   return new Promise((res, rej) => {
     const t = d.transaction(store, mode);
     const req = fn(t.objectStore(store));
@@ -369,155 +315,130 @@ async function dbDo(store, mode, fn) {
   });
 }
 
-async function saveSlides(all) {
+async function saveSlides(all, progress) {
   const source = decodeURIComponent((Office.context.document.url || "Præsentation").split(/[\\/]/).pop()).replace(/\.pptx?$/i, "");
-  let ids;
-  try {
-    ids = await run(async (ctx) => {
-      const coll = all ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
-      coll.load("items/id");
+  const ids = await run(async (ctx) => {
+    const coll = all ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
+    coll.load("items/id");
+    await ctx.sync();
+    return coll.items.map((s) => s.id);
+  });
+  if (!ids.length) throw new Error("Markér de slides, der skal gemmes");
+  for (const [k, id] of ids.entries()) {
+    progress(`Gemmer ${k + 1} af ${ids.length} …`);
+    const rec = await run(async (ctx) => {
+      const slide = ctx.presentation.slides.getItem(id);
+      const data = slide.exportAsBase64();
+      const img = slide.getImageAsBase64({ width: 400 });
       await ctx.sync();
-      return coll.items.map((s) => s.id);
+      const title = titleOf(await slideTexts(ctx, slide)) || `Slide ${k + 1}`;
+      return { data: data.value, thumb: img.value, title };
     });
-  } catch (e) { fail(e); return; }
-  if (!ids.length) { toast("Markér de slides, der skal gemmes"); return; }
-  const buttons = [$("libSaveSel"), $("libSaveAll")];
-  buttons.forEach((b) => { b.disabled = true; });
-  try {
-    for (const [k, id] of ids.entries()) {
-      toast(`Gemmer ${k + 1} af ${ids.length} …`);
-      const rec = await run(async (ctx) => {
-        const slide = ctx.presentation.slides.getItem(id);
-        const data = slide.exportAsBase64();
-        const img = slide.getImageAsBase64({ width: 400 });
-        await ctx.sync();
-        const title = titleOf(await slideTexts(ctx, slide)) || `Slide ${k + 1}`;
-        return { data: data.value, thumb: img.value, title };
-      });
-      const key = crypto.randomUUID();
-      await dbDo("data", "readwrite", (st) => st.put({ id: key, data: rec.data }));
-      await dbDo("meta", "readwrite", (st) => st.put({ id: key, title: rec.title, thumb: rec.thumb, source, added: Date.now() + k }));
-    }
-    toast(`Gemt ${ids.length} slides i biblioteket`);
-  } catch (e) { fail(e); } finally { buttons.forEach((b) => { b.disabled = false; }); }
-  renderLibrary();
-}
-
-async function renderLibrary() {
-  let items = [];
-  try { items = await dbDo("meta", "readonly", (st) => st.getAll()) || []; } catch (e) { console.error(e); }
-  const q = $("libSearch").value.trim().toLowerCase();
-  items = items.filter((it) => !q || (it.title + " " + it.source).toLowerCase().includes(q)).sort((a, b) => a.added - b.added);
-  if (!items.length) {
-    $("libList").innerHTML = `<div class="hint" style="padding:4px 2px">${q ? "Intet matcher søgningen." : "Biblioteket er tomt. Åbn en præsentation med jeres standard-slides, markér dem i oversigten til venstre, og tryk “Gem markerede slides”."}</div>`;
-    return;
+    const key = crypto.randomUUID();
+    await dbDo("data", "readwrite", (st) => st.put({ id: key, data: rec.data }));
+    await dbDo("meta", "readwrite", (st) => st.put({ id: key, title: rec.title, thumb: rec.thumb, source, added: Date.now() + k }));
   }
-  const groups = {};
-  items.forEach((it) => (groups[it.source] ||= []).push(it));
-  $("libList").innerHTML = Object.entries(groups).map(([src, list]) => `<div class="lib-source">${escapeHtml(src)} · ${list.length}</div>
-    <div class="lib-grid" style="margin-top:8px">${list.map((it) => `<button class="block" data-id="${it.id}" title="Indsæt: ${escapeHtml(it.title)}">
-      <img src="data:image/png;base64,${it.thumb}" alt=""><div class="t">${escapeHtml(it.title)}</div>
-      <span class="x" data-del="${it.id}" title="Fjern fra biblioteket">×</span></button>`).join("")}</div>`).join("");
+  return ids.length;
 }
 
-async function insertBlock(id) {
-  try {
-    const rec = await dbDo("data", "readonly", (st) => st.get(id));
-    if (!rec) return;
-    await run(async (ctx) => {
-      const sel = ctx.presentation.getSelectedSlides();
-      sel.load("items/id");
-      await ctx.sync();
-      const opts = { formatting: $("libTheme").checked ? "UseDestinationTheme" : "KeepSourceFormatting" };
-      if (sel.items[0]) opts.targetSlideId = sel.items[0].id;
-      ctx.presentation.insertSlidesFromBase64(rec.data, opts);
-      await ctx.sync();
-    });
-    toast("Slide indsat");
-  } catch (e) { fail(e); }
+async function insertBlock(id, useTheme) {
+  const rec = await dbDo("data", "readonly", (st) => st.get(id));
+  if (!rec) throw new Error("Sliden findes ikke længere i biblioteket");
+  await run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides();
+    sel.load("items/id");
+    await ctx.sync();
+    const opts = { formatting: useTheme ? "UseDestinationTheme" : "KeepSourceFormatting" };
+    if (sel.items[0]) opts.targetSlideId = sel.items[0].id;
+    ctx.presentation.insertSlidesFromBase64(rec.data, opts);
+    await ctx.sync();
+  });
 }
 async function deleteBlock(id) {
   await dbDo("meta", "readwrite", (st) => st.delete(id));
   await dbDo("data", "readwrite", (st) => st.delete(id));
-  renderLibrary();
 }
 
-// ---------- Genvejs-baren (AltGr+K) ----------
-let bar = null;
-function showBar() {
+// ---------- Det, vinduerne kan bede om ----------
+const OPS = {
+  context: async () => { await ensureTheme().catch(() => {}); return { theme: state.theme, hex: state.hex, fonts: state.fonts }; },
+  agendaScan, agendaInsert,
+  grid: (opts) => window.kvadrantGrid({ cols: opts.cols, gap: opts.gapCm * CM, same: opts.same }),
+  stamp: addStamp,
+  harvey: addHarvey,
+  saveSlides: (all, progress) => saveSlides(all, progress),
+  insertBlock, deleteBlock,
+  check: (progress) => runCheck(progress),
+  goTo, fixAll,
+};
+// Ops, der sender fremskridt undervejs, får en progress-funktion som sidste argument.
+const WITH_PROGRESS = new Set(["saveSlides", "check"]);
+
+// ---------- Vinduer ----------
+let dialog = null;
+const closeDialog = () => { try { dialog?.close(); } catch {} dialog = null; };
+
+function openDialog(page, view, size) {
   return new Promise((done) => {
-    if (bar) { bar.close(); bar = null; done(); return; }
-    const url = new URL("keys.html", location.href).href;
-    Office.context.ui.displayDialogAsync(url, { width: 55, height: 26, displayInIframe: false }, (r) => {
-      if (r.status !== Office.AsyncResultStatus.Succeeded) { console.error(r.error); done(); return; }
-      bar = r.value;
-      bar.addEventHandler(Office.EventType.DialogMessageReceived, (m) => {
+    closeDialog();
+    const url = new URL(page, location.href);
+    if (view) url.hash = view;
+    const open = (retry) => Office.context.ui.displayDialogAsync(url.href, { ...size, displayInIframe: false }, (r) => {
+      // 12007: der er allerede et vindue åbent; det forrige lukker lige nu.
+      if (r.status !== Office.AsyncResultStatus.Succeeded) {
+        if (retry && r.error?.code === 12007) { setTimeout(() => open(false), 400); return; }
+        console.error(r.error); toast("Vinduet kunne ikke åbnes"); done(); return;
+      }
+      const d = (dialog = r.value);
+      const reply = (msg) => { try { d.messageChild(JSON.stringify(msg)); } catch (e) { console.error(e); } };
+      d.addEventHandler(Office.EventType.DialogMessageReceived, async (m) => {
         let msg = {};
         try { msg = JSON.parse(m.message); } catch {}
-        if (!msg.keep && bar) { bar.close(); bar = null; }
-        if (msg.cmd && typeof window[msg.cmd] === "function") window[msg.cmd]();
+        if (msg.close) { closeDialog(); return; }
+        if (msg.cmd) {   // genvejs-baren
+          if (!msg.keep) closeDialog();
+          if (typeof window[msg.cmd] === "function") window[msg.cmd]();
+          return;
+        }
+        if (!msg.op || !OPS[msg.op]) return;
+        const args = [...(msg.args || [])];
+        if (WITH_PROGRESS.has(msg.op)) args.push((text) => reply({ id: msg.id, progress: text }));
+        try { reply({ id: msg.id, ok: true, result: await OPS[msg.op](...args) }); }
+        catch (e) { console.error(e); reply({ id: msg.id, ok: false, error: e?.message || String(e) }); }
       });
-      bar.addEventHandler(Office.EventType.DialogEventReceived, () => { bar = null; });
+      d.addEventHandler(Office.EventType.DialogEventReceived, () => { if (dialog === d) dialog = null; });
       done();
     });
+    open(true);
   });
+}
+
+const TOOLS_SIZE = { width: 36, height: 72 };
+const SMALL_SIZE = { width: 22, height: 40 };
+const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
+function showBar() {
+  if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Alt+K igen lukker
+  return openDialog("keys.html", "", { width: 55, height: 26 });
 }
 
 // ---------- Kommandoer til bånd, genveje og baren ----------
-const cmd = (fn) => async (event) => { try { await fn(); } catch (e) { fail(e); } finally { event?.completed?.(); } };
+const cmd = (fn) => async (event) => {
+  try { await fn(); } catch (e) { console.error(e); toast("Det lykkedes ikke: " + (e?.message || "ukendt fejl")); }
+  finally { event?.completed?.(); }
+};
 const TOOL_COMMANDS = {
   showBar: cmd(showBar),
-  openAgenda: cmd(async () => { await openTab("tools"); agendaScan(); }),
-  openTools: cmd(() => openTab("tools")),
-  openLibrary: cmd(() => openTab("library")),
-  openCheck: cmd(async () => { await openTab("check"); runCheck(); }),
-  ...Object.fromEntries(STAMPS.map((s) => [s.id, cmd(() => addStamp(s))])),
-  ...Object.fromEntries(HARVEY.map((p) => ["harvey" + p, cmd(() => addHarvey(p))])),
+  openTools: cmd(() => toolsView("agenda")),
+  openAgenda: cmd(() => toolsView("agenda")),
+  openGrid: cmd(() => toolsView("grid")),
+  openStamps: cmd(() => toolsView("stamps")),
+  openHarvey: cmd(() => toolsView("harvey")),
+  openLibrary: cmd(() => toolsView("library")),
+  openCheck: cmd(() => toolsView("check")),
+  ...Object.fromEntries(Object.keys(STAMPS).map((id) => [id, cmd(() => addStamp(id))])),
+  ...Object.fromEntries([0, 25, 50, 75, 100].map((p) => ["harvey" + p, cmd(() => addHarvey(p))])),
 };
 
-function wireTools() {
-  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-tab]"); if (b) showTab(b.dataset.tab); });
-  $("agendaScan").addEventListener("click", agendaScan);
-  $("agendaInsert").addEventListener("click", agendaInsert);
-  $("agendaList").addEventListener("input", (e) => {
-    const it = agendaItems[e.target.dataset.i];
-    if (!it) return;
-    if (e.target.type === "checkbox") it.on = e.target.checked; else it.title = e.target.value;
-  });
-  $("gridRun").addEventListener("click", () => window.kvadrantGrid({
-    cols: Math.round(num($("gridCols").value, 0)), gap: num($("gridGap").value, 0.3) * CM, same: $("gridSame").checked,
-  }));
-  $("stamps").innerHTML = STAMPS.map((s) => `<button class="chip" data-stamp="${s.id}">${s.label}</button>`).join("");
-  $("stamps").addEventListener("click", (e) => { const b = e.target.closest("[data-stamp]"); if (b) addStamp(STAMPS.find((s) => s.id === b.dataset.stamp)).catch(fail); });
-  const renderHarvey = () => { $("harvey").innerHTML = HARVEY.map((p) => `<button class="chip" data-p="${p}" title="${p} %">${harveySvg(p, state.hex)}${p}%</button>`).join(""); };
-  renderHarvey();
-  document.querySelector(".top").addEventListener("click", () => setTimeout(renderHarvey, 0));
-  $("harvey").addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) addHarvey(+b.dataset.p).catch(fail); });
-
-  $("libSaveSel").addEventListener("click", () => saveSlides(false));
-  $("libSaveAll").addEventListener("click", () => saveSlides(true));
-  $("libSearch").addEventListener("input", renderLibrary);
-  $("libList").addEventListener("click", (e) => {
-    const del = e.target.closest("[data-del]");
-    if (del) { e.stopPropagation(); deleteBlock(del.dataset.del); return; }
-    const b = e.target.closest(".block");
-    if (b) insertBlock(b.dataset.id);
-  });
-
-  $("checkRun").addEventListener("click", runCheck);
-  $("checkResult").addEventListener("click", (e) => {
-    const go = e.target.closest("[data-go]"), fix = e.target.closest("[data-fix]");
-    if (go) { const [k, i] = go.dataset.go.split(":"); goTo(issues[k][+i]); }
-    if (fix) fixAll(fix.dataset.fix);
-  });
-
-  let tab = "icons";
-  try { tab = localStorage.getItem("kvadrant.tab") || "icons"; } catch {}
-  showTab(["icons", "tools", "library", "check"].includes(tab) ? tab : "icons");
-}
-
-wireTools();
-window.kvadrantPane = { showTab };
 const register = () => {
   for (const [name, fn] of Object.entries(TOOL_COMMANDS)) {
     window[name] = fn;

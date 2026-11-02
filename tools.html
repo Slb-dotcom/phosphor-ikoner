@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Kvadrant-værktøjer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<style>
+  :root {
+    --ink: #262139; --text: #27272C; --muted: #6E6C80; --line: #E0E3EC; --bg: #F4F5F8; --surface: #fff;
+    --soft: #E9ECF3; --yellow: #EDF505; --yellow-soft: #FAFCC2; --radius: 6px;
+    --shadow: 0 1px 2px rgba(38, 33, 57, .06), 0 6px 20px rgba(38, 33, 57, .10);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 13px/1.4 Inter, "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  input { font: inherit; color: var(--text); }
+
+  header { background: var(--ink); color: #fff; padding: 12px 16px 0; }
+  .brand { display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 20px; width: auto; display: block; }
+  .close { border: 0; background: none; color: #B9B6CC; font-size: 18px; line-height: 1; width: 28px; height: 28px; border-radius: 6px; }
+  .close:hover { background: rgba(255,255,255,.08); color: #fff; }
+  nav { display: flex; gap: 2px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+  nav button {
+    flex: 1 0 auto; border: 0; background: none; color: #B9B6CC; padding: 7px 8px 9px; white-space: nowrap;
+    font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; border-bottom: 3px solid transparent;
+  }
+  nav button:hover { color: #fff; }
+  nav button[aria-selected="true"] { color: #fff; border-bottom-color: var(--yellow); }
+  body.compact header { padding-bottom: 12px; }
+  body.compact nav { display: none; }
+
+  main { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; }
+  section { display: none; gap: 12px; align-content: start; }
+  section.on { display: grid; }
+  h1 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .lead { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line); padding: 14px; display: grid; gap: 12px; }
+  .label { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .hint { font-size: 12px; color: var(--muted); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .primary, .ghost, .chip {
+    height: 34px; padding: 0 14px; border-radius: var(--radius); font-weight: 600; font-size: 12.5px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  }
+  .primary { border: 0; background: var(--ink); color: #fff; }
+  .primary:hover { background: #17132A; }
+  .primary:disabled { opacity: .4; cursor: default; }
+  .primary kbd { font: 600 10.5px Inter, sans-serif; color: var(--yellow); }
+  .ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .ghost:hover, .chip:hover { border-color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); height: 40px; padding: 0 14px; }
+  .chip svg { width: 20px; height: 20px; }
+  .field { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .field input { width: 64px; height: 34px; border: 1px solid var(--line); border-radius: var(--radius); text-align: center; outline: none; }
+  .field input:focus, .search input:focus, .agenda input[type=text]:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--yellow-soft); }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .check input { accent-color: var(--ink); width: 15px; height: 15px; }
+
+  /* Agenda */
+  .agenda { display: grid; gap: 6px; }
+  .agenda-item { display: grid; grid-template-columns: 26px 18px 1fr; gap: 8px; align-items: center; }
+  .agenda-item .no { font-size: 11px; font-weight: 700; color: var(--muted); text-align: right; }
+  .agenda input[type=text] { height: 32px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; min-width: 0; outline: none; }
+  .agenda-item.off input[type=text] { color: var(--muted); background: var(--bg); }
+
+  /* Harvey */
+  .harvey { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+  .harvey .ball { width: 96px; height: 96px; }
+  .pct { display: flex; align-items: center; gap: 6px; }
+  .pct input { width: 92px; height: 48px; font-size: 26px; font-weight: 700; color: var(--ink); text-align: right; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius); outline: none; }
+  .pct input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--yellow-soft); }
+  .pct span { font-size: 22px; font-weight: 700; color: var(--ink); }
+  input[type=range] { width: 100%; accent-color: var(--ink); }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .swatch { width: 22px; height: 22px; border-radius: 5px; border: 0; padding: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); position: relative; }
+  .swatch[aria-pressed="true"]::after { content: ""; position: absolute; inset: -3px; border-radius: 7px; border: 2px solid var(--ink); }
+  .presets { display: flex; gap: 6px; }
+  .presets button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; color: var(--ink); }
+  .presets button:hover { border-color: var(--ink); }
+
+  /* Bibliotek */
+  .search { position: relative; }
+  .search svg { position: absolute; left: 11px; top: 50%; translate: 0 -50%; width: 15px; height: 15px; color: var(--muted); }
+  .search input { width: 100%; height: 36px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); outline: none; }
+  .lib-source { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .block { position: relative; border: 0; padding: 0; background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; text-align: left; transition: transform .12s, box-shadow .12s; }
+  .block:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 2px var(--ink), var(--shadow); }
+  .block img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--soft); }
+  .block .t { padding: 6px 8px 7px; font-size: 11.5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block .x { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(38,33,57,.8); color: #fff; font-size: 13px; line-height: 22px; text-align: center; display: none; }
+  .block:hover .x { display: block; }
+
+  /* Tjek */
+  .badge { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 7px; border-radius: 10px; background: var(--yellow); color: var(--ink); font-size: 11px; font-weight: 700; margin-left: 8px; }
+  .issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .issue-head b { font-size: 12.5px; color: var(--ink); display: inline-flex; align-items: center; }
+  .issue { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; padding: 6px 10px; border-radius: var(--radius); background: var(--bg); }
+  .issue span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .issue button { border: 0; background: none; color: var(--ink); font-weight: 600; font-size: 12px; text-decoration: underline; padding: 0; flex: none; }
+  .ok-card { display: flex; gap: 10px; align-items: center; }
+  .ok-card .dot { width: 28px; height: 28px; border-radius: 50%; background: #D2E6DC; display: grid; place-items: center; color: var(--ink); font-weight: 700; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 18px; translate: -50% 12px; opacity: 0; max-width: 90%;
+    background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 999px; font-size: 12.5px;
+    box-shadow: var(--shadow); pointer-events: none; transition: opacity .2s, translate .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; translate: -50% 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><svg class="logo" viewBox="0 0 827.82 212.37" fill="#fff" role="img" aria-label="Kvadrant Consulting"><rect y="0" width="54.09" height="54.1" rx="3.83" ry="3.83"/><path d="M195.55,0h-33.58c-1.02,0-1.99.4-2.71,1.12L1.12,159.2c-.72.72-1.12,1.69-1.12,2.71v33.59c0,2.12,1.72,3.83,3.83,3.83h33.58c1.02,0,1.99-.4,2.71-1.12l57.14-57.12c1.34-1.34,3.52-1.34,4.87,0l57.08,57.16c.72.72,1.7,1.12,2.71,1.12h33.58c2.12,0,3.83-1.72,3.83-3.83v-33.59c0-1.02-.4-1.99-1.12-2.71l-57.08-57.15c-1.34-1.34-1.34-3.52,0-4.87l57.12-57.1c.72-.72,1.12-1.69,1.12-2.71V3.83c0-2.12-1.72-3.83-3.83-3.83Z"/><path d="M297.03,154.16c6.73,0,11.21,3.68,12.56,9.78h7.71c-1.88-10.05-8.97-16.33-20.18-16.33-13.27,0-22.33,9.51-22.33,23.5s8.79,23.32,22.15,23.32c11.12,0,18.57-6.28,20.36-16.14h-7.8c-1.43,5.83-5.92,9.6-12.47,9.6-8.79,0-14.71-6.82-14.71-16.77s5.92-16.95,14.71-16.95Z"/><path d="M348.26,147.61c-13.37,0-22.69,9.51-22.69,23.41s9.33,23.41,22.69,23.41,22.69-9.51,22.69-23.41-9.33-23.41-22.69-23.41ZM348.26,187.89c-9.06,0-15.16-7.09-15.16-16.86s6.1-16.86,15.16-16.86,15.16,7.09,15.16,16.86-6.1,16.86-15.16,16.86Z"/><path d="M403.62,147.61c-7.71,0-12.38,3.23-15.07,6.73l-.99-6.19h-6.37v45.74h7.36v-22.87c0-10.32,5.2-16.68,13.81-16.68,7.98,0,12.38,5.02,12.38,14.53v25.02h7.36v-25.47c0-15.16-8.16-20.81-18.47-20.81Z"/><path d="M451.17,167.26c-6.63-.81-11.48-1.43-11.48-6.46,0-4.22,4.31-6.91,10.68-6.91s10.58,3.5,11.12,8.16h7.53c-.72-9.51-8.25-14.35-18.66-14.44-10.31-.09-17.94,5.38-17.94,13.72,0,9.51,8.16,11.57,18.39,12.83,6.82.81,11.84,1.26,11.84,7,0,4.22-4.57,7-11.03,7-7.62,0-12.38-3.95-12.65-9.33h-7.53c.18,10.04,8.34,15.61,20.18,15.61,10.14,0,18.3-5.29,18.3-13.81,0-10.14-8.34-12.11-18.75-13.36Z"/><path d="M511.9,171.02c0,10.31-5.02,16.68-13.36,16.68-7.62,0-11.93-5.02-11.93-14.53v-25.02h-7.36v25.47c0,15.16,7.98,20.81,18.03,20.81,7.53,0,11.93-3.23,14.62-6.64l.99,6.1h6.37v-45.74h-7.36v22.87Z"/><rect x="531.11" y="131.11" width="7.35" height="62.79"/><path d="M561.07,181.88v-27h11.84v-6.73h-11.84v-12.83h-7.35v12.83h-8.25v6.73h8.25v27.09c0,8.07,3.14,11.93,11.93,11.93h7.98v-6.73h-7.27c-3.95,0-5.3-1.43-5.3-5.29Z"/><path d="M585.57,130.93c-2.69,0-4.76,1.97-4.76,4.75s2.06,4.75,4.76,4.75,4.75-1.97,4.75-4.75-2.06-4.75-4.75-4.75Z"/><rect x="581.81" y="148.15" width="7.35" height="45.74"/><path d="M623.43,147.61c-7.71,0-12.38,3.23-15.07,6.73l-.99-6.19h-6.37v45.74h7.35v-22.87c0-10.32,5.2-16.68,13.81-16.68,7.98,0,12.38,5.02,12.38,14.53v25.02h7.36v-25.47c0-15.16-8.16-20.81-18.48-20.81Z"/><path d="M689.19,156.05c-2.87-5.11-7.98-8.43-15.7-8.43-12.65,0-21.98,9.42-21.98,23.41,0,14.89,9.33,23.41,21.98,23.41,7.71,0,12.65-3.23,15.7-8.43v5.38c0,9.96-5.2,14.44-14.8,14.44-7.63,0-12.74-3.23-13.99-8.97h-7.53c1.17,10.04,9.33,15.52,20.99,15.52,15.7,0,22.69-7.53,22.69-20.72v-43.5h-6.37l-.99,7.89ZM674.21,187.89c-9.06,0-15.16-6.91-15.16-16.86s6.1-16.86,15.16-16.86,15.07,7,15.07,17.04-6.1,16.68-15.07,16.68Z"/><polygon points="292.37 84.83 306.84 69.95 330.56 103.64 344.46 103.64 314.56 61.66 342.5 32.04 328.32 32.04 292.37 70.09 292.37 5.36 280.86 5.36 280.86 103.64 292.37 103.64 292.37 84.83"/><polygon points="413.81 32.04 401.74 32.04 380.26 90.59 358.64 32.04 346.28 32.04 373.1 103.64 387 103.64 413.81 32.04"/><path d="M487.24,32.04h-9.97l-1.54,11.23c-4.63-7.02-12.5-12.08-24.57-12.08-19.8,0-34.4,14.74-34.4,36.65,0,23.31,14.61,36.65,34.4,36.65,12.08,0,19.8-5.76,24.57-12.35l1.54,11.51h9.97V32.04ZM452.28,94.24c-14.18,0-23.73-10.81-23.73-26.4s9.54-26.4,23.73-26.4,23.59,10.95,23.59,26.68-9.55,26.12-23.59,26.12Z"/><path d="M534.83,104.49c12.07,0,19.8-5.76,24.57-12.35l1.55,11.51h9.97V5.36h-11.51v37.63c-4.35-6.88-12.5-11.8-24.57-11.8-19.8,0-34.4,14.74-34.4,36.65,0,23.31,14.6,36.65,34.4,36.65ZM535.95,41.44c14.04,0,23.59,10.95,23.59,26.68s-9.54,26.12-23.59,26.12-23.73-10.81-23.73-26.4,9.55-26.4,23.73-26.4Z"/><path d="M617.24,43.27h5.76v-11.23h-3.23c-12.78,0-18.26,5.33-21.63,10.81l-1.54-10.81h-9.97v71.61h11.51v-36.51c0-11.37,4.07-23.87,19.1-23.87Z"/><path d="M685.33,43.27c-4.63-7.02-12.5-12.08-24.57-12.08-19.8,0-34.4,14.74-34.4,36.65,0,23.31,14.61,36.65,34.4,36.65,12.08,0,19.8-5.76,24.57-12.35l1.54,11.51h9.97V32.04h-9.97l-1.54,11.23ZM661.88,94.24c-14.18,0-23.73-10.81-23.73-26.4s9.54-26.4,23.73-26.4,23.59,10.95,23.59,26.68-9.55,26.12-23.59,26.12Z"/><path d="M747.66,31.19c-12.07,0-19.38,5.06-23.59,10.53l-1.54-9.69h-9.97v71.61h11.51v-35.81c0-16.15,8.14-26.12,21.63-26.12,12.5,0,19.38,7.86,19.38,22.75v39.17h11.51v-39.88c0-23.73-12.78-32.58-28.93-32.58Z"/><path d="M816.44,93.11c-6.18,0-8.28-2.25-8.28-8.28v-42.26h18.53v-10.53h-18.53V11.96h-11.51v20.08h-12.92v10.53h12.92v42.4c0,12.64,4.91,18.67,18.67,18.67h12.5v-10.53h-11.38Z"/></svg><button class="close" id="close" title="Luk (Esc)" aria-label="Luk">×</button></div>
+  <nav id="nav">
+    <button data-view="agenda">Agenda</button>
+    <button data-view="grid">Gitter</button>
+    <button data-view="stamps">Stempler</button>
+    <button data-view="harvey">Harvey ball</button>
+    <button data-view="library">Bibliotek</button>
+    <button data-view="check">Tjek</button>
+  </nav>
+</header>
+
+<main>
+  <section id="agenda">
+    <div><h1>Agenda</h1><p class="lead">Bygges af afsnits-slides, fx "Icons · 01". Ret teksterne, før du indsætter.</p></div>
+    <div class="card">
+      <div class="row"><span class="label">Punkter</span><span class="spacer"></span><button class="ghost" id="agendaScan">Læs slides igen</button></div>
+      <div class="agenda" id="agendaList"><div class="hint">Læser slides …</div></div>
+    </div>
+    <div class="card">
+      <label class="check"><input type="checkbox" id="agendaEach" checked> En agenda før hvert afsnit, med afsnittet fremhævet</label>
+      <div class="row"><button class="primary" id="agendaInsert" disabled>Indsæt agenda</button><span class="hint">Erstatter agendaer, Kvadrant har lavet før</span></div>
+    </div>
+  </section>
+
+  <section id="grid">
+    <div><h1>Gitter</h1><p class="lead">Stiller de markerede objekter i rækker og kolonner med samme afstand.</p></div>
+    <div class="card">
+      <div class="row">
+        <label class="field">Kolonner <input type="text" id="gridCols" placeholder="auto"></label>
+        <label class="field">Afstand <input type="text" id="gridGap" value="0,3"> cm</label>
+      </div>
+      <label class="check"><input type="checkbox" id="gridSame"> Gør dem lige store</label>
+      <div class="row"><button class="primary" id="gridRun">Stil i gitter <kbd>Enter</kbd></button></div>
+    </div>
+  </section>
+
+  <section id="stamps">
+    <div><h1>Stempler</h1><p class="lead">Sættes på den slide, du står på.</p></div>
+    <div class="card">
+      <span class="label">Status</span>
+      <div class="chips">
+        <button class="chip" data-stamp="stampDraft">Udkast</button>
+        <button class="chip" data-stamp="stampConfidential">Fortroligt</button>
+        <button class="chip" data-stamp="stampDiscussion">Til diskussion</button>
+      </div>
+      <span class="label">Kildehenvisning</span>
+      <div class="chips">
+        <button class="chip" data-stamp="stampSource">Kilde: …</button>
+        <button class="chip" data-stamp="stampSourceEn">Source: …</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="harvey">
+    <div class="card">
+      <div class="harvey">
+        <div id="ballPreview"></div>
+        <div style="display:grid;gap:10px">
+          <div class="pct"><input id="pct" inputmode="decimal" value="50" aria-label="Procent"><span>%</span></div>
+          <input type="range" id="pctRange" min="0" max="100" value="50" aria-label="Procent">
+          <div class="presets" id="presets"></div>
+        </div>
+      </div>
+      <div class="swatches" id="hvColors"></div>
+      <div class="row"><button class="primary" id="harveyInsert">Indsæt <kbd>Enter</kbd></button><span class="hint">Esc lukker</span></div>
+    </div>
+  </section>
+
+  <section id="library">
+    <div><h1>Bibliotek</h1><p class="lead">Åbn fx Kvadrant Slides, markér de slides I genbruger, og gem dem her. Klik på en slide for at indsætte den.</p></div>
+    <div class="card">
+      <div class="row">
+        <button class="primary" id="libSaveSel">Gem markerede slides</button>
+        <button class="ghost" id="libSaveAll">Gem alle</button>
+      </div>
+      <label class="check"><input type="checkbox" id="libTheme"> Brug denne præsentations tema ved indsættelse</label>
+      <div class="search">
+        <svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
+        <input id="libSearch" type="text" placeholder="Søg i biblioteket" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div id="libList"></div>
+  </section>
+
+  <section id="check">
+    <div><h1>Kvadrant-tjek</h1><p class="lead">Skrifttyper og farver uden for temaet, tekst uden for sliden og tomme pladsholdere.</p></div>
+    <div class="card"><div class="row"><button class="primary" id="checkRun">Tjek præsentationen</button><span class="hint" id="checkStatus"></span></div></div>
+    <div id="checkResult" style="display:grid;gap:12px"></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const num = (v, d) => { const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? d : n; };
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200); }
+
+// ---------- Forbindelse til PowerPoint (via panelets runtime) ----------
+let ready = false, seq = 0;
+const pending = {};
+function call(op, ...args) {
+  if (!ready) return Promise.reject(new Error("Åbn vinduet fra PowerPoint"));
+  return new Promise((res, rej) => {
+    const id = ++seq;
+    pending[id] = { res, rej };
+    Office.context.ui.messageParent(JSON.stringify({ id, op, args }));
+  });
+}
+function onParent(arg) {
+  let m = {};
+  try { m = JSON.parse(arg.message); } catch { return; }
+  const p = pending[m.id];
+  if (!p) return;
+  if (m.progress) { p.onProgress?.(m.progress); progressHandler?.(m.progress); return; }
+  delete pending[m.id];
+  m.ok ? p.res(m.result) : p.rej(new Error(m.error));
+}
+let progressHandler = null;
+const close = () => { if (ready) Office.context.ui.messageParent(JSON.stringify({ close: true })); };
+const fail = (e) => toast(e?.message || "Det lykkedes ikke");
+
+// ---------- Visninger ----------
+const views = ["agenda", "grid", "stamps", "harvey", "library", "check"];
+let ctx = { theme: [], hex: "262139" };
+function show(view) {
+  if (!views.includes(view)) view = "agenda";
+  document.querySelectorAll("#nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.view === view));
+  document.querySelectorAll("main section").forEach((s) => s.classList.toggle("on", s.id === view));
+  document.title = "Kvadrant · " + ($("nav").querySelector(`[data-view="${view}"]`)?.textContent || "");
+  if (view === "agenda" && !agendaItems && ready) agendaScan();
+  if (view === "library") renderLibrary();
+  if (view === "harvey") setTimeout(() => { $("pct").focus(); $("pct").select(); }, 50);
+  if (view === "grid") setTimeout(() => $("gridCols").focus(), 50);
+  current = view;
+}
+let current = "agenda";
+
+// ---------- Agenda ----------
+let agendaItems = null;
+async function agendaScan() {
+  $("agendaList").innerHTML = '<div class="hint">Læser slides …</div>';
+  $("agendaInsert").disabled = true;
+  try { agendaItems = await call("agendaScan"); } catch (e) { agendaItems = []; $("agendaList").innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+  if (!agendaItems.length) { $("agendaList").innerHTML = '<div class="hint">Fandt ingen slides med titler.</div>'; return; }
+  $("agendaList").innerHTML = agendaItems.map((it, i) => `<div class="agenda-item${it.on ? "" : " off"}">
+    <span class="no">${it.index + 1}</span><input type="checkbox" data-i="${i}" ${it.on ? "checked" : ""} aria-label="Med i agendaen">
+    <input type="text" data-i="${i}" value="${esc(it.title)}" aria-label="Agendapunkt"></div>`).join("");
+  $("agendaInsert").disabled = false;
+}
+
+// ---------- Harvey ball ----------
+const harveySvg = (p, hex) => {
+  const r = 116, c = 128, a = (p / 100) * 2 * Math.PI;
+  const x = (c + r * Math.sin(a)).toFixed(2), y = (c - r * Math.cos(a)).toFixed(2);
+  const fill = p <= 0 ? "" : p >= 100 ? `<circle cx="${c}" cy="${c}" r="${r}"/>` : `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${p > 50 ? 1 : 0} 1 ${x} ${y} Z"/>`;
+  return `<svg class="ball" viewBox="0 0 256 256"><circle cx="${c}" cy="${c}" r="${r}" fill="#FFFFFF" stroke="#${hex}" stroke-width="12"/><g fill="#${hex}">${fill}</g></svg>`;
+};
+let hvHex = null;
+const pct = () => Math.max(0, Math.min(100, num($("pct").value, 0)));
+function renderHarvey() {
+  const hex = hvHex || ctx.hex;
+  $("ballPreview").innerHTML = harveySvg(pct(), hex);
+  $("pctRange").value = pct();
+  const colors = [...new Map([...ctx.theme.map((c) => [c.hex, c.name]), [ctx.hex, "Valgt i ikonpanelet"]]).entries()];
+  $("hvColors").innerHTML = colors.map(([h, n]) => `<button class="swatch" data-hex="${h}" title="${esc(n)} · #${h}" aria-pressed="${h === hex}" style="background:#${h}"></button>`).join("");
+}
+async function insertHarvey() {
+  $("harveyInsert").disabled = true;
+  try { await call("harvey", pct(), hvHex || ctx.hex); close(); }
+  catch (e) { fail(e); } finally { $("harveyInsert").disabled = false; }
+}
+
+// ---------- Bibliotek ----------
+function dbGetAll() {
+  return new Promise((res) => {
+    const r = indexedDB.open("kvadrant", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("meta", { keyPath: "id" }); r.result.createObjectStore("data", { keyPath: "id" }); };
+    r.onerror = () => res([]);
+    r.onsuccess = () => {
+      const q = r.result.transaction("meta", "readonly").objectStore("meta").getAll();
+      q.onsuccess = () => { res(q.result || []); r.result.close(); };
+      q.onerror = () => { res([]); r.result.close(); };
+    };
+  });
+}
+async function renderLibrary() {
+  const q = $("libSearch").value.trim().toLowerCase();
+  const items = (await dbGetAll()).filter((it) => !q || (it.title + " " + it.source).toLowerCase().includes(q)).sort((a, b) => a.added - b.added);
+  if (!items.length) {
+    $("libList").innerHTML = `<div class="hint">${q ? "Intet matcher søgningen." : "Biblioteket er tomt endnu."}</div>`;
+    return;
+  }
+  const groups = {};
+  items.forEach((it) => (groups[it.source] ||= []).push(it));
+  $("libList").innerHTML = Object.entries(groups).map(([src, list]) => `<div class="lib-source">${esc(src)} · ${list.length}</div>
+    <div class="lib-grid" style="margin:8px 0 14px">${list.map((it) => `<button class="block" data-id="${it.id}" title="Indsæt: ${esc(it.title)}">
+      <img src="data:image/png;base64,${it.thumb}" alt=""><div class="t">${esc(it.title)}</div>
+      <span class="x" data-del="${it.id}" title="Fjern fra biblioteket">×</span></button>`).join("")}</div>`).join("");
+}
+async function saveSlides(all) {
+  const btns = [$("libSaveSel"), $("libSaveAll")];
+  btns.forEach((b) => { b.disabled = true; });
+  progressHandler = toast;
+  try { const n = await call("saveSlides", all); toast(`Gemt ${n} slides`); }
+  catch (e) { fail(e); } finally { progressHandler = null; btns.forEach((b) => { b.disabled = false; }); renderLibrary(); }
+}
+
+// ---------- Tjek ----------
+const CHECKS = {
+  font: { title: "Skrifttyper uden for temaet", fix: "Brug temaets skrift" },
+  color: { title: "Farver uden for paletten", fix: "Brug nærmeste temafarve" },
+  off: { title: "Uden for sliden", fix: "Flyt ind på sliden" },
+  empty: { title: "Tomme pladsholdere", fix: "Slet dem" },
+};
+let issues = null, fonts = [];
+async function runCheck() {
+  $("checkRun").disabled = true;
+  progressHandler = (t) => { $("checkStatus").textContent = t; };
+  try { ({ issues, fonts } = await call("check")); renderIssues(); }
+  catch (e) { fail(e); } finally { progressHandler = null; $("checkStatus").textContent = ""; $("checkRun").disabled = false; }
+}
+function renderIssues() {
+  const total = Object.values(issues).reduce((n, l) => n + l.length, 0);
+  $("checkResult").innerHTML = (total ? "" : `<div class="card ok-card"><span class="dot">✓</span><div><b>Alt ser fint ud.</b><div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div></div></div>`) +
+    Object.entries(CHECKS).filter(([k]) => issues[k].length).map(([k, c]) => `<div class="card">
+      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b><button class="ghost" data-fix="${k}">${c.fix}</button></div>
+      <div style="display:grid;gap:6px">${issues[k].slice(0, 40).map((it, i) => `<div class="issue"><span>Slide ${it.slide} · ${esc(it.name)}${it.detail ? " · " + esc(it.detail) : ""}</span><button data-go="${k}:${i}">Gå til</button></div>`).join("")}</div>
+      ${issues[k].length > 40 ? `<div class="hint">… og ${issues[k].length - 40} mere</div>` : ""}
+      ${k === "font" ? `<div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div>` : ""}
+    </div>`).join("");
+}
+
+// ---------- Hændelser ----------
+$("nav").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
+$("close").addEventListener("click", close);
+
+$("agendaScan").addEventListener("click", agendaScan);
+$("agendaList").addEventListener("input", (e) => {
+  const it = agendaItems?.[e.target.dataset.i];
+  if (!it) return;
+  if (e.target.type === "checkbox") { it.on = e.target.checked; e.target.closest(".agenda-item").classList.toggle("off", !it.on); }
+  else it.title = e.target.value;
+});
+$("agendaInsert").addEventListener("click", async () => {
+  $("agendaInsert").disabled = true;
+  try { const n = await call("agendaInsert", agendaItems, $("agendaEach").checked); toast(n > 1 ? `Indsat ${n} agendaer` : "Agenda indsat"); agendaScan(); }
+  catch (e) { fail(e); $("agendaInsert").disabled = false; }
+});
+
+const runGrid = () => call("grid", { cols: Math.round(num($("gridCols").value, 0)), gapCm: num($("gridGap").value, 0.3), same: $("gridSame").checked })
+  .then(() => toast("Stillet i gitter"), fail);
+$("gridRun").addEventListener("click", runGrid);
+
+$("stamps").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-stamp]");
+  if (b) call("stamp", b.dataset.stamp).then(() => toast("Indsat: " + b.textContent), fail);
+});
+
+$("presets").innerHTML = [0, 25, 50, 75, 100].map((p) => `<button data-p="${p}">${p}%</button>`).join("");
+$("presets").addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) { $("pct").value = b.dataset.p; renderHarvey(); $("pct").focus(); } });
+$("pct").addEventListener("input", renderHarvey);
+$("pctRange").addEventListener("input", (e) => { $("pct").value = e.target.value; renderHarvey(); });
+$("hvColors").addEventListener("click", (e) => { const s = e.target.closest("[data-hex]"); if (s) { hvHex = s.dataset.hex; renderHarvey(); } });
+$("harveyInsert").addEventListener("click", insertHarvey);
+
+$("libSaveSel").addEventListener("click", () => saveSlides(false));
+$("libSaveAll").addEventListener("click", () => saveSlides(true));
+$("libSearch").addEventListener("input", renderLibrary);
+$("libList").addEventListener("click", (e) => {
+  const del = e.target.closest("[data-del]");
+  if (del) { e.stopPropagation(); call("deleteBlock", del.dataset.del).then(renderLibrary, fail); return; }
+  const b = e.target.closest(".block");
+  if (b) call("insertBlock", b.dataset.id, $("libTheme").checked).then(() => toast("Slide indsat"), fail);
+});
+
+$("checkRun").addEventListener("click", runCheck);
+$("checkResult").addEventListener("click", (e) => {
+  const go = e.target.closest("[data-go]"), fix = e.target.closest("[data-fix]");
+  if (go) { const [k, i] = go.dataset.go.split(":"); call("goTo", issues[k][+i]).catch(fail); }
+  if (fix) {
+    const k = fix.dataset.fix;
+    call("fixAll", k, issues[k]).then((n) => { toast(`Rettet ${n}`); issues[k] = []; renderIssues(); }, fail);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { close(); return; }
+  if (e.key !== "Enter") return;
+  if (current === "harvey") { e.preventDefault(); insertHarvey(); }
+  if (current === "grid") { e.preventDefault(); runGrid(); }
+});
+
+// Startvisning fra adressen (tools.html#harvey); Harvey åbner som et lille vindue uden faner.
+const start = location.hash.slice(1) || "agenda";
+document.body.classList.toggle("compact", start === "harvey");
+renderHarvey();
+show(start);
+
+if (window.Office) Office.onReady(async () => {
+  if (!Office.context.ui?.messageParent) return;   // åbnet direkte i en browser
+  ready = true;
+  Office.context.ui.addHandlerAsync(Office.EventType.DialogParentMessageReceived, onParent);
+  try { ctx = await call("context"); } catch {}
+  renderHarvey();
+  if (current === "agenda") agendaScan();
+});
+</script>
+</body>
+</html>
