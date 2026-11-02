@@ -6,6 +6,7 @@
 <title>Phosphor-ikoner</title>
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script src="commands.js"></script>
 <style>
   :root {
     --bg: #FAF7F2;
@@ -916,10 +917,15 @@ function connectToPowerPoint() {
   refreshTheme(true);
   if (!hasPptApi()) return;
   refreshSuggestions();
-  let timer;
+  // Panelet deler runtime med båndknapperne og kører videre, når det er lukket; så venter forslag og tema til det åbnes.
+  let timer, paneVisible = true;
+  Office.addin?.onVisibilityModeChanged?.((a) => {
+    paneVisible = a.visibilityMode === Office.VisibilityMode.taskpane;
+    if (paneVisible) { refreshSuggestions(); refreshTheme(true); }
+  });
   doc.addHandlerAsync(Office.EventType.DocumentSelectionChanged, () => {
     clearTimeout(timer);
-    timer = setTimeout(() => { if (!inserting) { refreshSuggestions(); refreshTheme(); } }, 400);
+    if (paneVisible) timer = setTimeout(() => { if (!inserting) { refreshSuggestions(); refreshTheme(); } }, 400);
   });
   // Når man kommer tilbage til panelet (fx efter at have skiftet tema under Design), læses temaet igen.
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshTheme(true); });

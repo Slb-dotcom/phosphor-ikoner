@@ -1,5 +1,7 @@
 // Kommandoerne bag knapperne på fanen "Kvadrant" (se build-ribbon.mjs for navnene).
 // Alle arbejder på de markerede figurer via PowerPoint JavaScript API (PowerPointApi 1.5+).
+// Filen indlæses af index.html (delt runtime), så alt ligger i en funktion for ikke at støde sammen med panelets navne.
+(() => {
 
 const STEP = 0.1 * 28.3465;   // 0,1 cm i punkter, bruges af "Øg/Mindsk afstand"
 const FONT_SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 54, 60, 66, 72, 80, 88, 96];
@@ -21,7 +23,7 @@ function onShapes(min, fn) {
     } catch (e) {
       console.error(e);
     } finally {
-      event.completed();
+      event?.completed?.();   // genvejstaster kalder uden event
     }
   };
 }
@@ -51,7 +53,7 @@ function onText(fn) {
     } catch (e) {
       console.error(e);
     } finally {
-      event.completed();
+      event?.completed?.();
     }
   };
 }
@@ -95,7 +97,13 @@ async function bounds(shapes) {
 }
 
 // ---------- Juster ----------
-const align = (fn) => onShapes(1, async (shapes) => { const b = await bounds(shapes); shapes.forEach((s) => fn(s, b)); });
+// Den først markerede figur står stille, og de øvrige justeres efter den. Ved én figur justeres der efter sliden.
+const align = (fn) => onShapes(1, async (shapes) => {
+  if (shapes.length === 1) { fn(shapes[0], await bounds(shapes)); return; }
+  const [ref, ...rest] = shapes;
+  const b = { l: ref.left, t: ref.top, r: ref.left + ref.width, b: ref.top + ref.height };
+  rest.forEach((s) => fn(s, b));
+});
 const alignLeft = align((s, b) => { s.left = b.l; });
 const alignRight = align((s, b) => { s.left = b.r - s.width; });
 const alignCenter = align((s, b) => { s.left = (b.l + b.r) / 2 - s.width / 2; });
@@ -218,6 +226,7 @@ const COMMANDS = {
   fontBigger, fontSmaller, toggleBold, toggleItalic, toggleUnderline, textLeft, textCenter, textRight, textJustify, toggleBullets,
   fontColor3C2C1C: fontColor("3C2C1C"), fontColorB8862E: fontColor("B8862E"), fontColor000000: fontColor("000000"),
   fontColor7A7A7A: fontColor("7A7A7A"), fontColorFFFFFF: fontColor("FFFFFF"),
+  showPane: async (event) => { try { await Office.addin.showAsTaskpane(); } catch (e) { console.error(e); } finally { event?.completed?.(); } },
 };
 
 Office.onReady(() => {
@@ -226,3 +235,4 @@ Office.onReady(() => {
     Office.actions?.associate?.(name, fn);
   }
 });
+})();

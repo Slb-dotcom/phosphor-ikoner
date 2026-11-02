@@ -1,0 +1,237 @@
+{
+ "actions": [
+  {
+   "id": "showPane",
+   "type": "ExecuteFunction",
+   "name": "Åbn ikonpanelet"
+  },
+  {
+   "id": "alignLeft",
+   "type": "ExecuteFunction",
+   "name": "Flugt til venstre efter det først markerede objekt (ét objekt: til slidens kant)"
+  },
+  {
+   "id": "alignRight",
+   "type": "ExecuteFunction",
+   "name": "Flugt til højre efter det først markerede objekt"
+  },
+  {
+   "id": "alignCenter",
+   "type": "ExecuteFunction",
+   "name": "Centrér vandret efter det først markerede objekt"
+  },
+  {
+   "id": "alignTop",
+   "type": "ExecuteFunction",
+   "name": "Flugt i toppen efter det først markerede objekt"
+  },
+  {
+   "id": "alignBottom",
+   "type": "ExecuteFunction",
+   "name": "Flugt i bunden efter det først markerede objekt"
+  },
+  {
+   "id": "alignMiddle",
+   "type": "ExecuteFunction",
+   "name": "Centrér lodret efter det først markerede objekt"
+  },
+  {
+   "id": "centerOnSlide",
+   "type": "ExecuteFunction",
+   "name": "Centrér de markerede objekter på sliden"
+  },
+  {
+   "id": "distributeH",
+   "type": "ExecuteFunction",
+   "name": "Fordel objekterne jævnt vandret"
+  },
+  {
+   "id": "distributeV",
+   "type": "ExecuteFunction",
+   "name": "Fordel objekterne jævnt lodret"
+  },
+  {
+   "id": "spaceHMore",
+   "type": "ExecuteFunction",
+   "name": "Øg den vandrette afstand med 0,1 cm"
+  },
+  {
+   "id": "spaceHLess",
+   "type": "ExecuteFunction",
+   "name": "Mindsk den vandrette afstand med 0,1 cm"
+  },
+  {
+   "id": "spaceVMore",
+   "type": "ExecuteFunction",
+   "name": "Øg den lodrette afstand med 0,1 cm"
+  },
+  {
+   "id": "spaceVLess",
+   "type": "ExecuteFunction",
+   "name": "Mindsk den lodrette afstand med 0,1 cm"
+  },
+  {
+   "id": "sameSize",
+   "type": "ExecuteFunction",
+   "name": "Samme bredde og højde som det først markerede"
+  },
+  {
+   "id": "sameWidth",
+   "type": "ExecuteFunction",
+   "name": "Samme bredde som det først markerede"
+  },
+  {
+   "id": "sameHeight",
+   "type": "ExecuteFunction",
+   "name": "Samme højde som det først markerede"
+  },
+  {
+   "id": "swapShapes",
+   "type": "ExecuteFunction",
+   "name": "Byt plads på to markerede objekter"
+  },
+  {
+   "id": "copyType",
+   "type": "ExecuteFunction",
+   "name": "Giv de øvrige markerede objekter skriften fra det først markerede"
+  },
+  {
+   "id": "bringToFront",
+   "type": "ExecuteFunction",
+   "name": "Placér forrest"
+  },
+  {
+   "id": "sendToBack",
+   "type": "ExecuteFunction",
+   "name": "Placér bagest"
+  }
+ ],
+ "shortcuts": [
+  {
+   "action": "showPane",
+   "key": {
+    "default": "Ctrl+Alt+Shift+I"
+   }
+  },
+  {
+   "action": "alignLeft",
+   "key": {
+    "default": "Ctrl+Alt+Shift+L"
+   }
+  },
+  {
+   "action": "alignRight",
+   "key": {
+    "default": "Ctrl+Alt+Shift+R"
+   }
+  },
+  {
+   "action": "alignCenter",
+   "key": {
+    "default": "Ctrl+Alt+Shift+C"
+   }
+  },
+  {
+   "action": "alignTop",
+   "key": {
+    "default": "Ctrl+Alt+Shift+T"
+   }
+  },
+  {
+   "action": "alignBottom",
+   "key": {
+    "default": "Ctrl+Alt+Shift+B"
+   }
+  },
+  {
+   "action": "alignMiddle",
+   "key": {
+    "default": "Ctrl+Alt+Shift+M"
+   }
+  },
+  {
+   "action": "centerOnSlide",
+   "key": {
+    "default": "Ctrl+Alt+Shift+O"
+   }
+  },
+  {
+   "action": "distributeH",
+   "key": {
+    "default": "Ctrl+Alt+Shift+H"
+   }
+  },
+  {
+   "action": "distributeV",
+   "key": {
+    "default": "Ctrl+Alt+Shift+V"
+   }
+  },
+  {
+   "action": "spaceHMore",
+   "key": {
+    "default": "Ctrl+Alt+Shift+Right"
+   }
+  },
+  {
+   "action": "spaceHLess",
+   "key": {
+    "default": "Ctrl+Alt+Shift+Left"
+   }
+  },
+  {
+   "action": "spaceVMore",
+   "key": {
+    "default": "Ctrl+Alt+Shift+Down"
+   }
+  },
+  {
+   "action": "spaceVLess",
+   "key": {
+    "default": "Ctrl+Alt+Shift+Up"
+   }
+  },
+  {
+   "action": "sameSize",
+   "key": {
+    "default": "Ctrl+Alt+Shift+S"
+   }
+  },
+  {
+   "action": "sameWidth",
+   "key": {
+    "default": "Ctrl+Alt+Shift+W"
+   }
+  },
+  {
+   "action": "sameHeight",
+   "key": {
+    "default": "Ctrl+Alt+Shift+E"
+   }
+  },
+  {
+   "action": "swapShapes",
+   "key": {
+    "default": "Ctrl+Alt+Shift+X"
+   }
+  },
+  {
+   "action": "copyType",
+   "key": {
+    "default": "Ctrl+Alt+Shift+P"
+   }
+  },
+  {
+   "action": "bringToFront",
+   "key": {
+    "default": "Ctrl+Alt+Shift+F"
+   }
+  },
+  {
+   "action": "sendToBack",
+   "key": {
+    "default": "Ctrl+Alt+Shift+G"
+   }
+  }
+ ]
+}
