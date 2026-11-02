@@ -686,7 +686,7 @@ async function cleanCopy(progress) {
 
 // ---------- Det, vinduerne kan bede om ----------
 const OPS = {
-  context: async () => { await ensureTheme().catch(() => {}); return { theme: state.theme, hex: state.hex, fonts: state.fonts }; },
+  context: () => ({ theme: state.theme, hex: state.hex, fonts: state.fonts }),   // svarer straks; temaet læses kun, når det skal bruges (Tjek)
   agendaScan, agendaInsert, agendaTemplateSave,
   grid: (opts) => window.kvadrantGrid({ cols: opts.cols, gap: opts.gapCm * CM, same: opts.same }),
   stamp: addStamp,

@@ -3,9 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Kvadrant-værktøjer</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" onload="this.rel='stylesheet'">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 <style>
   :root {
     --ink: #262139; --text: #27272C; --muted: #6E6C80; --line: #E0E3EC; --bg: #F4F5F8; --surface: #fff;
@@ -242,7 +241,7 @@
     <div class="card">
       <div class="row"><span class="hint" id="bankStatus">Henter slidebanken …</span><span class="spacer"></span>
         <button class="ghost" id="bankFlush" hidden></button><button class="ghost" id="bankSync" hidden>Opdatér fra filen</button>
-        <button class="ghost" id="folderPick" hidden>Vælg slidebank-mappe</button><button class="ghost" id="folderRescan" hidden>Opdatér</button></div>
+        <button class="primary" id="folderPick" hidden>Forbind til slidebanken</button><button class="ghost" id="folderRescan" hidden>Opdatér</button></div>
       <div class="chips" id="bankPractices"></div>
       <div class="chips small" id="bankSteps"></div>
       <div class="search">
@@ -435,6 +434,14 @@ let fPractice = "all", fStep = "all";
 // Hver slide er en fil: <praksis>/<trin>/GTM-03-004 Titel.pptx, med beskrivelsen i filens egenskaber og et billede i _miniaturer.
 // Mappen vælges én gang; adgangen (FileSystemDirectoryHandle) gemmes i IndexedDB som "_bankDir".
 const FS = !!window.showDirectoryPicker;
+// fflate (zip) hentes først, når slidebank-mappen bruges, så vinduet åbner hurtigt.
+let fflatePromise;
+const loadFflate = () => (fflatePromise ||= window.fflate ? Promise.resolve() : new Promise((res, rej) => {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
+  s.onload = res; s.onerror = () => rej(new Error("Kunne ikke hente zip-biblioteket"));
+  document.head.appendChild(s);
+}));
 let dirHandle = null, folderMode = false;
 function idb(store, mode, fn) {
   return new Promise((res, rej) => {
@@ -475,7 +482,7 @@ async function folderUI() {
   $("folderPick").hidden = folderMode;
   $("folderRescan").hidden = !folderMode;
   if (!folderMode) {
-    $("bankStatus").innerHTML = "Vælg den fælles mappe <b>Slidebank</b> (i SHARED FOLDER FOR PHOSPOR) én gang, så kan du gemme og hente slides herfra.";
+    $("bankStatus").innerHTML = "Første gang: tryk <b>Forbind til slidebanken</b> og vælg mappen <b>Slidebank</b> i SHARED FOLDER FOR PHOSPOR. Windows kræver, at man selv peger på mappen én gang; derefter husker Kvadrant den.";
     $("bankSync").hidden = $("bankFlush").hidden = true;
     $("bankAdd").textContent = "Gem i slidebanken";
     $("addHint").textContent = "Vælg slidebank-mappen først.";
@@ -489,11 +496,19 @@ async function folderUI() {
   if ($("bankOpen")) $("bankOpen").hidden = true;
   $("bankAdd").textContent = "Gem i slidebanken";
   $("addHint").textContent = "Gemmes som fil i mappen med næste nummer, fx GTM-03-004 Titel.pptx";
+  const stale = !when || Date.now() - new Date(when) > 10 * 60 * 1000;
+  if (stale && !scanning && (await folderAccess(false))) { scanning = true; scanFolder().catch(console.error).finally(() => { scanning = false; }); }
 }
+let scanning = false;
 
+// Kun mappen "Slidebank" (eller mappen lige over den) godtages; den huskes, så man aldrig skal vælge igen.
 async function pickFolder() {
-  try { dirHandle = await window.showDirectoryPicker({ id: "kvadrant-slidebank", mode: "readwrite" }); }
+  let picked;
+  try { picked = await window.showDirectoryPicker({ id: "kvadrant-slidebank", mode: "readwrite", startIn: "documents" }); }
   catch (e) { if (e.name !== "AbortError") fail(e); return; }
+  const ok = picked.name.toLowerCase() === "slidebank" || (await sub(picked, "Slidebank")) || (await sub(picked, bank.practices[0][1]));
+  if (!ok) { toast("Det er ikke slidebank-mappen. Vælg Kvadrant Consulting > Business Analysts > SHARED FOLDER FOR PHOSPOR > Slidebank"); return; }
+  dirHandle = picked;
   await idb("meta", "readwrite", (st) => st.put({ id: "_bankDir", source: "_", handle: dirHandle }));
   folderMode = true;
   await scanFolder();
@@ -502,6 +517,7 @@ async function pickFolder() {
 async function scanFolder() {
   if (!(await folderAccess(true))) { toast("Kvadrant fik ikke adgang til mappen"); return; }
   $("bankStatus").textContent = "Læser slidebank-mappen …";
+  await loadFflate();
   const root = await bankRoot();
   const old = (await dbGetAll()).filter((m) => m.source === "folder");
   const byId = Object.fromEntries(old.map((m) => [m.id, m]));
@@ -563,26 +579,30 @@ async function writeFile(dir, name, bytes) {
 async function saveToFolder() {
   if (!(await folderAccess(true))) throw new Error("Giv Kvadrant adgang til slidebank-mappen");
   const pc = $("addPractice").value, sc = $("addStep").value, desc = $("addDesc").value.trim();
+  await loadFflate();
   progressHandler = toast;
   toast("Eksporterer slides …");
   try {
     const keys = await call("exportSelected");
+    const recs = await Promise.all(keys.map((k) => idb("data", "readonly", (st) => st.get(k))));
     const root = await bankRoot();
-    const sd = await (await root.getDirectoryHandle(nameOf(bank.practices, pc), { create: true })).getDirectoryHandle(`${sc} ${nameOf(bank.steps, sc)}`, { create: true });
-    const td = await sd.getDirectoryHandle("_miniaturer", { create: true });
-    const prefix = `${pc}-${sc}-`;
-    let seq = 0;
-    for await (const [fn] of sd.entries()) if (fn.toUpperCase().startsWith(prefix)) seq = Math.max(seq, +fn.slice(prefix.length, prefix.length + 3) || 0);
     const saved = [];
-    for (const k of keys) {
-      const rec = await idb("data", "readonly", (st) => st.get(k));
-      const code = prefix + String(++seq).padStart(3, "0");
-      toast(`Gemmer ${code} …`);
-      await writeFile(sd, `${code} ${safeName(rec.title || "Slide")}.pptx`, withProps(fromB64(rec.data), { title: rec.title, desc, code }));
-      if (rec.thumb) await writeFile(td, code + ".png", fromB64(rec.thumb));
-      await idb("data", "readwrite", (st) => st.delete(k));
-      saved.push(code);
+    // "Alle praksisser": samme slide gemmes i hver praksis med hver sit nummer.
+    for (const code of pc === "ALL" ? bank.practices.map(([c]) => c) : [pc]) {
+      const sd = await (await root.getDirectoryHandle(nameOf(bank.practices, code), { create: true })).getDirectoryHandle(`${sc} ${nameOf(bank.steps, sc)}`, { create: true });
+      const td = await sd.getDirectoryHandle("_miniaturer", { create: true });
+      const prefix = `${code}-${sc}-`;
+      let seq = 0;
+      for await (const [fn] of sd.entries()) if (fn.toUpperCase().startsWith(prefix)) seq = Math.max(seq, +fn.slice(prefix.length, prefix.length + 3) || 0);
+      for (const rec of recs) {
+        const id = prefix + String(++seq).padStart(3, "0");
+        toast(`Gemmer ${id} …`);
+        await writeFile(sd, `${id} ${safeName(rec.title || "Slide")}.pptx`, withProps(fromB64(rec.data), { title: rec.title, desc, code: id }));
+        if (rec.thumb) await writeFile(td, id + ".png", fromB64(rec.thumb));
+        saved.push(id);
+      }
     }
+    for (const k of keys) await idb("data", "readwrite", (st) => st.delete(k));
     toast(`Gemt i slidebanken: ${saved.join(", ")}`);
     $("addDesc").value = "";
   } finally { progressHandler = null; }
@@ -602,7 +622,11 @@ async function insertFromFolder(meta) {
 async function loadBank() {
   try { bank = { ...bank, ...(await call("bankStatus")) }; } catch {}
   const opt = (list) => list.map(([c, n]) => `<option value="${c}">${c} · ${esc(n)}</option>`).join("");
-  if (!$("addPractice").options.length) { $("addPractice").innerHTML = opt(bank.practices); $("addStep").innerHTML = opt(bank.steps); }
+  if (!$("addPractice").options.length) {
+    $("addPractice").innerHTML = '<option value="ALL">Alle praksisser</option>' + opt(bank.practices);
+    $("addPractice").value = bank.practices[0][0];
+    $("addStep").innerHTML = opt(bank.steps);
+  }
   const when = bank.synced ? new Date(bank.synced).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
   $("bankStatus").innerHTML = bank.isBank ? "<b>Slidebank-filen er åben.</b> Mærk slides nedenfor, eller opdatér listen."
     : bank.count ? `${bank.count} slides${when ? " · opdateret " + when : ""}. Åbn Kvadrant Slidebank.pptx i den fælles mappe for at hente nye.`
@@ -651,8 +675,14 @@ async function bankAdd() {
   $("bankAdd").disabled = true;
   if (folderMode) { try { await saveToFolder(); } catch (e) { fail(e); } finally { $("bankAdd").disabled = false; } return; }
   try {
-    const r = await call("bankAdd", $("addPractice").value, $("addStep").value, $("addDesc").value.trim());
-    toast(r.added.length ? `Gemt som ${r.added.join(", ")}` : `${r.queued} slides venter på slidebank-filen`);
+    const pcs = $("addPractice").value === "ALL" ? bank.practices.map(([c]) => c) : [$("addPractice").value];
+    const added = [];
+    let queued = 0;
+    for (const pc of pcs) {
+      const r = await call("bankAdd", pc, $("addStep").value, $("addDesc").value.trim());
+      added.push(...r.added); queued += r.queued;
+    }
+    toast(added.length ? `Gemt som ${added.join(", ")}` : `${queued} slides venter på slidebank-filen`);
     $("addDesc").value = "";
   } catch (e) { fail(e); } finally { $("bankAdd").disabled = false; loadBank(); }
 }
