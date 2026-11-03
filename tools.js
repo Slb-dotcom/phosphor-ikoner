@@ -684,6 +684,138 @@ async function cleanCopy(progress) {
   return { notes, comments };
 }
 
+// ---------- Grafer efter Kvadrant-regler ----------
+// Office.js kan ikke formatere diagrammer, men en slide kan eksporteres som .pptx, hvor diagrammet er XML.
+// XML'en rettes til Kvadrant-stil, og sliden sættes ind igen som en "spejling" lige efter originalen, som så slettes.
+// Gælder PowerPoints egne diagrammer (ikke think-cell).
+const CHART_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart", DML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const CHART_PALETTE = ["tx2", "accent5", "accent1", "accent3", "accent2", "accent6", "accent4"];
+
+function formatChartXml(xml, { size = null, gridlines = false, legendBottom = true } = {}) {   // size = null: behold tekststørrelsen
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const frag = (s) => doc.importNode(new DOMParser().parseFromString(
+    `<r xmlns:c="${CHART_NS}" xmlns:a="${DML_NS}">${s}</r>`, "application/xml").documentElement.firstElementChild, true);
+  const kids = (el, name) => [...el.children].filter((c) => c.namespaceURI === CHART_NS && c.localName === name);
+  const all = (name, ns = CHART_NS) => [...doc.getElementsByTagNameNS(ns, name)];
+  // Erstat <c:spPr> eller indsæt den efter det sidste af de elementer, der skal stå før den.
+  const setSpPr = (parent, inner, after) => {
+    const sp = frag(`<c:spPr>${inner}</c:spPr>`);
+    const old = kids(parent, "spPr")[0];
+    if (old) { parent.replaceChild(sp, old); return; }
+    const anchor = [...parent.children].filter((c) => after.includes(c.localName)).pop();
+    anchor ? anchor.after(sp) : parent.prepend(sp);
+  };
+  const solid = (clr) => `<a:solidFill><a:schemeClr val="${clr}"/></a:solidFill>`;
+  const NONE = "<a:noFill/><a:ln><a:noFill/></a:ln>";
+
+  // Ingen baggrund eller ramme om diagram og plotområde.
+  const space = doc.documentElement, chart = kids(space, "chart")[0], plot = chart && kids(chart, "plotArea")[0];
+  if (chart) setSpPr(space, NONE, ["chart"]);
+  if (plot) setSpPr(plot, NONE, ["layout", "barChart", "bar3DChart", "lineChart", "line3DChart", "pieChart", "pie3DChart", "doughnutChart",
+    "areaChart", "area3DChart", "scatterChart", "radarChart", "bubbleChart", "catAx", "valAx", "dateAx", "serAx", "dTable"]);
+
+  // Serier i temaets farver: søjler/flader fyldt, linjer som streg.
+  for (const type of ["barChart", "bar3DChart", "areaChart", "area3DChart", "lineChart", "line3DChart", "scatterChart", "radarChart"]) {
+    for (const group of all(type)) {
+      const line = /line|scatter|radar/i.test(type);
+      kids(group, "ser").forEach((ser, i) => {
+        if (kids(ser, "dPt").length) return;   // bevidst fremhævede punkter: seriens farver bevares
+        const clr = CHART_PALETTE[i % CHART_PALETTE.length];
+        setSpPr(ser, line ? `<a:ln w="28575" cap="rnd">${solid(clr)}<a:round/></a:ln>` : `${solid(clr)}<a:ln><a:noFill/></a:ln>`, ["idx", "order", "tx"]);
+      });
+      const gap = kids(group, "gapWidth")[0];
+      if (gap) gap.setAttribute("val", "75");
+    }
+  }
+  // Lagkage/donut: hvert stykke sin farve.
+  for (const group of [...all("pieChart"), ...all("pie3DChart"), ...all("doughnutChart")]) {
+    for (const ser of kids(group, "ser")) {
+      const n = +(ser.getElementsByTagNameNS(CHART_NS, "ptCount")[0]?.getAttribute("val") || 0);
+      kids(ser, "dPt").forEach((d) => d.remove());
+      const anchor = [...ser.children].filter((c) => ["idx", "order", "tx", "spPr", "explosion"].includes(c.localName)).pop();
+      let at = anchor;
+      for (let p = 0; p < n; p++) {
+        const d = frag(`<c:dPt><c:idx val="${p}"/><c:bubble3D val="0"/><c:spPr>${solid(CHART_PALETTE[p % CHART_PALETTE.length])}<a:ln w="12700"><a:solidFill><a:schemeClr val="bg1"/></a:solidFill></a:ln></c:spPr></c:dPt>`);
+        at ? at.after(d) : ser.prepend(d);
+        at = d;
+      }
+    }
+  }
+
+  // Akser: ingen tick-mærker, ingen hjælpelinjer, kun en tynd lys linje på kategoriaksen.
+  for (const name of ["catAx", "valAx", "dateAx", "serAx"]) {
+    for (const ax of all(name)) {
+      if (!gridlines) [...kids(ax, "majorGridlines"), ...kids(ax, "minorGridlines")].forEach((g) => g.remove());
+      kids(ax, "majorTickMark").forEach((t) => t.setAttribute("val", "none"));
+      kids(ax, "minorTickMark").forEach((t) => t.setAttribute("val", "none"));
+      const lineXml = name === "valAx" ? NONE
+        : `<a:noFill/><a:ln w="9525">${`<a:solidFill><a:schemeClr val="tx1"><a:lumMod val="15000"/><a:lumOff val="85000"/></a:schemeClr></a:solidFill>`}</a:ln>`;
+      setSpPr(ax, lineXml, ["axId", "scaling", "delete", "axPos", "majorGridlines", "minorGridlines", "title", "numFmt", "majorTickMark", "minorTickMark", "tickLblPos"]);
+    }
+  }
+
+  // Forklaring nederst.
+  if (legendBottom) for (const lg of all("legend")) kids(lg, "legendPos").forEach((p) => p.setAttribute("val", "b"));
+
+  // Al tekst: temaets brødtekstskrift, grå, samme størrelse.
+  for (const r of [...all("defRPr", DML_NS), ...all("rPr", DML_NS)]) {
+    if (size) r.setAttribute("sz", String(Math.round(size * 100)));
+    [...r.children].filter((c) => /Fill$|^latin$|^ea$|^cs$/.test(c.localName)).forEach((c) => c.remove());
+    const fill = frag(`<a:solidFill><a:schemeClr val="tx1"><a:lumMod val="65000"/><a:lumOff val="35000"/></a:schemeClr></a:solidFill>`);
+    const ln = [...r.children].find((c) => c.localName === "ln");
+    ln ? ln.after(fill) : r.prepend(fill);
+    const effects = [...r.children].filter((c) => ["effectLst", "effectDag", "highlight", "uLnTx", "uLn", "uFillTx", "uFill"].includes(c.localName)).pop() || fill;
+    effects.after(frag(`<a:latin typeface="+mn-lt"/>`), frag(`<a:ea typeface="+mn-ea"/>`), frag(`<a:cs typeface="+mn-cs"/>`));
+  }
+  return new XMLSerializer().serializeToString(doc);
+}
+
+const b64ToBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+const bytesToB64 = (bytes) => { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+
+async function formatCharts(opts, progress) {
+  const ids = await run(async (ctx) => {
+    const coll = opts.all ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
+    coll.load("items/id");
+    await ctx.sync();
+    return coll.items.map((s) => s.id);
+  });
+  if (!ids.length) throw new Error("Markér de slides med grafer");
+  let slidesDone = 0, charts = 0;
+  const newIds = [];
+  for (const [k, sid] of ids.entries()) {
+    progress(`Slide ${k + 1} af ${ids.length} …`);
+    const b64 = await run(async (ctx) => { const r = ctx.presentation.slides.getItem(sid).exportAsBase64(); await ctx.sync(); return r.value; });
+    const files = fflate.unzipSync(b64ToBytes(b64));
+    const keys = Object.keys(files).filter((f) => /^ppt\/charts\/chart\d+\.xml$/.test(f));
+    if (!keys.length) continue;
+    for (const f of keys) files[f] = fflate.strToU8(formatChartXml(fflate.strFromU8(files[f]), opts));
+    const fixed = bytesToB64(fflate.zipSync(files, { level: 6 }));
+    // Spejlingen sættes ind lige efter originalen, som derefter slettes.
+    const id = await run(async (ctx) => {
+      const slides = ctx.presentation.slides;
+      slides.load("items/id");
+      await ctx.sync();
+      const before = new Set(slides.items.map((s) => s.id));
+      ctx.presentation.insertSlidesFromBase64(fixed, { formatting: "UseDestinationTheme", targetSlideId: sid });
+      await ctx.sync();
+      const after = ctx.presentation.slides;
+      after.load("items/id");
+      await ctx.sync();
+      const nid = after.items.find((s) => !before.has(s.id))?.id;
+      if (!nid) throw new Error("Den rettede slide kunne ikke sættes ind");
+      ctx.presentation.slides.getItem(sid).delete();
+      await ctx.sync();
+      return nid;
+    });
+    newIds.push(id);
+    slidesDone++; charts += keys.length;
+  }
+  if (newIds.length) await run(async (ctx) => { ctx.presentation.setSelectedSlides(newIds); await ctx.sync(); }).catch(() => {});
+  return { slides: slidesDone, charts };
+}
+window.kvadrantFormatChartXml = formatChartXml;   // til test
+
 // ---------- Det, vinduerne kan bede om ----------
 const OPS = {
   context: () => ({ theme: state.theme, hex: state.hex, fonts: state.fonts }),   // svarer straks; temaet læses kun, når det skal bruges (Tjek)
@@ -697,9 +829,10 @@ const OPS = {
   goTo, fixAll,
   bankStatus, bankSync: (progress) => bankSync(progress), bankAdd, bankFlush: (progress) => bankFlush(progress),
   formatNumbers, cleanCopy: (progress) => cleanCopy(progress),
+  formatCharts: (opts, progress) => formatCharts(opts, progress),
 };
 // Ops, der sender fremskridt undervejs, får en progress-funktion som sidste argument.
-const WITH_PROGRESS = new Set(["saveSlides", "check", "bankSync", "bankFlush", "cleanCopy"]);
+const WITH_PROGRESS = new Set(["saveSlides", "check", "bankSync", "bankFlush", "cleanCopy", "formatCharts"]);
 
 // ---------- Vinduer ----------
 let dialog = null;
