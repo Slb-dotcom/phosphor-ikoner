@@ -286,18 +286,19 @@
   </section>
 
   <section id="numbers">
-    <div><h1>Talformat</h1><p class="lead">Markér teksten eller tekstboksene med tallene. Fx bliver 1234567 til 1,2 mio. kr. Årstal og små tal lades være.</p></div>
+    <div><h1>Talformat</h1><p class="lead">Kvadrant skriver beløb som 12,5 mDKK på dansk og 12.5 mUSD på engelsk. Markér tekst, eller ret hele sliden eller præsentationen på én gang. Årstal og små tal lades være.</p></div>
     <div class="card">
       <div class="row">
-        <label class="field">Sprog <select id="nfLang"><option value="da">Dansk · 1,2 mio.</option><option value="en">Engelsk · 1.2m</option></select></label>
+        <label class="field">Sprog <select id="nfLang"><option value="da">Dansk · 1,2 mDKK</option><option value="en">Engelsk · 1.2 mUSD</option></select></label>
         <label class="field">Enhed <select id="nfUnit"><option value="auto">Automatisk</option><option value="1000">Tusinder</option><option value="1000000">Millioner</option><option value="1000000000">Milliarder</option><option value="none">Ingen</option></select></label>
       </div>
       <div class="row">
         <label class="field">Decimaler <select id="nfDec"><option>0</option><option selected>1</option><option>2</option></select></label>
-        <label class="field">Valuta <select id="nfCur"><option value="keep">Behold</option><option value="kr.">kr.</option><option value="DKK">DKK</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="">Ingen</option></select></label>
+        <label class="field">Valuta <select id="nfCur"><option value="auto" selected>Kvadrant (DKK / USD)</option><option value="keep">Behold</option><option value="kr.">kr.</option><option value="DKK">DKK</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="">Ingen</option></select></label>
       </div>
       <div class="hint">Eksempel: 1234567 bliver <b id="nfExample"></b></div>
-      <div class="row"><button class="primary" id="nfRun">Formatér tal <kbd>Enter</kbd></button></div>
+      <div class="row"><button class="primary" id="nfRun">Formatér markering <kbd>Enter</kbd></button><button id="nfSlide">Fix på sliden</button><button id="nfDeck">Fix i hele præsentationen</button></div>
+      <div class="hint">På sliden og i hele præsentationen rettes kun beløb med valuta (kr., DKK, EUR, USD), så antal og procenter ikke bliver til beløb.</div>
     </div>
   </section>
 
@@ -308,6 +309,11 @@
     <div class="card">
       <span class="label">Husk selv</span>
       <div class="hint" style="line-height:1.7">☐ Overskriften er slidens vigtigste pointe, ikke et resumé<br>☐ Projektnavnet (fx "Box") i stedet for kundens navn, og aldrig kundens logo<br>☐ Fodnoter og kilder passer til oversigtssliden<br>☐ Bokse har runde hjørner, og grafer har hvid baggrund<br>☐ Fed skrift til indledningen af punkter, temaets skrifttyper overalt</div>
+    </div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Skrift og overskrifter</span>
+        <div class="hint" style="margin-top:4px">Læser temaets standardskrifter (<b id="fontNames">læses ved klik</b>). Overskrifter får overskriftsfonten og 25 pt, al anden tekst brødtekstfonten. Fed og farve bevares.</div></div>
+        <button class="ghost" id="fontSlide">Fix på sliden</button><button class="ghost" id="fontDeck">Fix i hele præsentationen</button></div>
     </div>
     <div class="card">
       <div class="row"><div style="flex:1;min-width:220px"><span class="label">Rens før afsendelse</span>
@@ -751,10 +757,13 @@ function nfExample() {
   const o = nfOpts(), units = o.lang === "da" ? [[1e9, "mia."], [1e6, "mio."], [1e3, "t."]] : [[1e9, "bn"], [1e6, "m"], [1e3, "k"]];
   const v = 1234567, [d, w] = o.unit === "auto" ? units.find(([x]) => v >= x) : o.unit === "none" ? [1, ""] : units.find(([x]) => x === +o.unit);
   const n = (v / d).toLocaleString(o.lang === "da" ? "da-DK" : "en-US", { minimumFractionDigits: o.decimals, maximumFractionDigits: o.decimals });
-  const cur = o.currency === "keep" ? "" : o.currency;
-  $("nfExample").textContent = o.lang === "da" ? [n, w, cur].filter(Boolean).join(" ") : `${cur ? cur + " " : ""}${n}${w}`;
+  const cur = o.currency === "auto" ? (o.lang === "da" ? "DKK" : "USD") : o.currency === "keep" ? "" : o.currency;
+  const prefix = { da: { 1e3: "t", 1e6: "m", 1e9: "mia. " }, en: { 1e3: "k", 1e6: "m", 1e9: "bn" } }[o.lang][d] || "";
+  $("nfExample").textContent = /^[A-Z]{3}$/.test(cur) ? `${n} ${prefix}${cur}`
+    : o.lang === "da" ? [n, w, cur].filter(Boolean).join(" ") : `${cur ? cur + " " : ""}${n}${w}`;
 }
-const runNumbers = () => call("formatNumbers", nfOpts()).then((n) => toast(n ? `Formateret ${n} tal` : "Fandt ingen tal at formatere"), fail);
+const runNumbers = (scope = "selection") => call("formatNumbers", { ...nfOpts(), scope })
+  .then((n) => toast(n ? `Formateret ${n} tal` : scope === "selection" ? "Fandt ingen tal at formatere" : "Fandt ingen beløb med valuta"), fail);
 
 // ---------- Tjek ----------
 const CHECKS = {
@@ -844,7 +853,9 @@ $("libList").addEventListener("click", (e) => {
 });
 
 ["nfLang", "nfUnit", "nfDec", "nfCur"].forEach((id) => $(id).addEventListener("change", nfExample));
-$("nfRun").addEventListener("click", runNumbers);
+$("nfRun").addEventListener("click", () => runNumbers());
+$("nfSlide").addEventListener("click", () => runNumbers("slide"));
+$("nfDeck").addEventListener("click", () => runNumbers("deck"));
 $("chRun").addEventListener("click", async () => {
   $("chRun").disabled = true;
   progressHandler = (s) => { $("chStatus").textContent = s; };
@@ -859,6 +870,15 @@ $("cleanRun").addEventListener("click", async () => {
   try { const r = await call("cleanCopy"); toast(`Renset kopi åbnet: ${r.notes} noter og ${r.comments} kommentar-filer fjernet`); }
   catch (e) { fail(e); } finally { progressHandler = null; $("cleanRun").disabled = false; }
 });
+
+const runFonts = (scope) => call("fixFonts", { scope }).then((r) => {
+  $("fontNames").textContent = `overskrift ${r.major}, brødtekst ${r.minor}`;
+  const done = [r.fixed && `${r.fixed} tekstfelter til ${r.major} / ${r.minor}`, r.titles && `${r.titles} overskrifter til 25 pt`].filter(Boolean);
+  toast((done.length ? "Rettet " + done.join(" og ") : "Alt følger allerede temaets skrift og 25 pt overskrifter")
+    + (r.mixed ? ` · ${r.mixed} med blandede skrifter lades være` : ""));
+}, fail);
+$("fontSlide").addEventListener("click", () => runFonts("slide"));
+$("fontDeck").addEventListener("click", () => runFonts("deck"));
 
 $("checkRun").addEventListener("click", runCheck);
 $("checkResult").addEventListener("click", (e) => {

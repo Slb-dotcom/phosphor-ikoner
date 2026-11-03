@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03d";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03e";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -667,7 +667,7 @@ async function bankFlush(progress) {
 }
 
 // ---------- Talformat ----------
-// "1234567" / "1.234.567" / "1,2345e6" -> "1,2 mio. kr." (dansk) eller "DKK 1.2m" (engelsk).
+// "1234567" / "1.234.567" / "12,5 mio kr" -> "1,2 mDKK" (dansk) eller "1.2 mUSD" (engelsk), som Kvadrant skriver det.
 function parseNumber(s) {
   s = s.replace(/[\s ]/g, "");
   const dot = s.lastIndexOf("."), comma = s.lastIndexOf(",");
@@ -683,54 +683,136 @@ function parseNumber(s) {
   return parseFloat(s);
 }
 const UNITS = { da: [[1e9, "mia."], [1e6, "mio."], [1e3, "t."]], en: [[1e9, "bn"], [1e6, "m"], [1e3, "k"]] };
+// Med valutakode sættes enheden foran koden: tDKK, mDKK, mia. DKK / kUSD, mUSD, bnUSD.
+const ISO_PREFIX = { da: { 1e3: "t", 1e6: "m", 1e9: "mia. " }, en: { 1e3: "k", 1e6: "m", 1e9: "bn" } };
+const LANG_CURRENCY = { da: "DKK", en: "USD" };
 function formatNumber(v, { lang = "da", unit = "auto", decimals = 1, currency = "" }) {
   const units = UNITS[lang];
   const [div, word] = unit === "auto" ? (units.find(([d]) => Math.abs(v) >= d) || [1, ""]) : unit === "none" ? [1, ""] : units.find(([d]) => d === +unit) || [1, ""];
   const n = (v / div).toLocaleString(lang === "da" ? "da-DK" : "en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  if (/^[A-Z]{3}$/.test(currency)) return `${n} ${ISO_PREFIX[lang][div] || ""}${currency}`;
   if (lang === "da") return [n, word, currency].filter(Boolean).join(" ");
   return `${currency ? currency + " " : ""}${n}${word}`;
 }
-// Tal + evt. enhed og valuta, der allerede står efter tallet ("12,5 mio kr"), som så indgår i værdien og erstattes.
-const NUM_RX = /(?<![\w.,])(-?\d{1,3}(?:[.,  ]\d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?)(?![.,]?\d)(\s*(?:mia\.?|mio\.?|millioner|million|mn|bn|t\.|k|m)(?![a-zæøå]))?(\s*(?:kr\.?|DKK|EUR|USD|€)(?![a-zæøå]))?/gi;
+// Tal + evt. enhed og valuta, der allerede står efter tallet ("12,5 mio kr", "12,5 mDKK"), som så indgår i værdien og erstattes.
+const NUM_RX = /(?<![\w.,])(-?\d{1,3}(?:[.,  ]\d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?)(?![.,]?\d)(\s*(?:mia\.?|mio\.?|millioner|million|mn|bn|t\.|t(?=DKK|EUR|USD)|k|m)(?!(?!DKK|EUR|USD)[a-zæøå]))?(\s*(?:kr\.?|DKK|EUR|USD|€)(?![a-zæøå]))?/gi;
 const SCALE = (w) => (/^(mia|bn)/i.test(w) ? 1e9 : /^(mio|mill|mn|m)/i.test(w) ? 1e6 : /^(t|k)/i.test(w) ? 1e3 : 1);
+// Returnerer også de enkelte erstatninger, så kun tallene skiftes ud og resten af tekstens formatering (fed osv.) bevares.
 function reformatText(text, opts) {
   let count = 0;
-  const out = text.replace(NUM_RX, (m, num, scale = "", cur = "") => {
-    let v = parseNumber(num);
-    if (isNaN(v)) return m;
-    scale = scale.trim(); cur = cur.trim();
-    if (!scale && !cur && /^\d{4}$/.test(num) && v >= 1900 && v <= 2100) return m;   // årstal
-    if (!scale && !cur && Math.abs(v) < 1000) return m;                             // små tal (antal, procenter) lades være
-    v *= SCALE(scale);
-    count++;
-    const currency = opts.currency === "keep" ? (cur ? cur.replace(/^kr$/i, "kr.") : "") : opts.currency;
-    return formatNumber(v, { ...opts, currency });
+  const edits = [];
+  const out = text.replace(NUM_RX, (m, num, scale = "", cur = "", start) => {
+    const r = reformatOne(m, num, scale, cur, opts);
+    if (r !== m) { count++; edits.push({ start, length: m.length, text: r }); }
+    return r;
   });
-  return { out, count };
+  return { out, count, edits };
 }
+function reformatOne(m, num, scale, cur, opts) {
+  let v = parseNumber(num);
+  if (isNaN(v)) return m;
+  scale = scale.trim(); cur = cur.trim();
+  if (opts.onlyMoney && !cur) return m;                                             // slide/præsentation: kun beløb med valuta
+  if (!scale && !cur && /^\d{4}$/.test(num) && v >= 1900 && v <= 2100) return m;   // årstal
+  if (!scale && !cur && Math.abs(v) < 1000) return m;                             // små tal (antal, procenter) lades være
+  v *= SCALE(scale);
+  // "auto" = Kvadrant-standard: behold en valuta der står i teksten (kr. bliver DKK), ellers DKK på dansk og USD på engelsk.
+  const known = /^kr\.?$/i.test(cur) ? "DKK" : cur === "€" ? "EUR" : cur.toUpperCase();
+  const currency = opts.currency === "auto" ? known || LANG_CURRENCY[opts.lang]
+    : opts.currency === "keep" ? (cur ? cur.replace(/^kr$/i, "kr.") : "") : opts.currency;
+  // Slide/præsentation: beløb der allerede står i Kvadrant-form ("450 tDKK", "12,5 mDKK") får lov at beholde deres decimaler.
+  const own = /[.,](\d{1,2})$/.exec(num)?.[1].length || 0;
+  if (opts.onlyMoney && formatNumber(v, { ...opts, currency, decimals: own }) === m.trim()) return m;
+  return formatNumber(v, { ...opts, currency });
+}
+// Figurer med tekst, også inde i grupper.
+async function textShapesOf(ctx, shapes) {
+  shapes.load("items/type,items/name");
+  await ctx.sync();
+  const out = [];
+  for (const s of shapes.items) {
+    if (TEXTY.includes(s.type)) out.push(s);
+    else if (s.type === "Group") out.push(...await textShapesOf(ctx, s.group.shapes));
+  }
+  return out;
+}
+const textRangesOf = async (ctx, shapes) => (await textShapesOf(ctx, shapes)).map((s) => s.textFrame.textRange);
+// Læser et felt pr. figur i én forespørgsel; driller en figur, læses de én ad gangen, og de ulæselige springes over.
+async function loadEach(ctx, items, queue) {
+  items.forEach(queue);
+  try { await ctx.sync(); return items; } catch {
+    const ok = [];
+    for (const it of items) { queue(it); try { await ctx.sync(); ok.push(it); } catch {} }
+    return ok;
+  }
+}
+// scope: "selection" (markeret tekst/figurer), "slide" (markerede slides) eller "deck" (hele præsentationen).
+// På slide og præsentation rettes kun beløb med valuta, så antal, årstal og procenter ikke bliver til kroner.
 async function formatNumbers(opts) {
+  const scope = opts.scope || "selection";
+  if (scope !== "selection") opts = { ...opts, onlyMoney: true };
   return run(async (ctx) => {
     let ranges = [];
-    const tr = ctx.presentation.getSelectedTextRangeOrNullObject();
-    tr.load("length,text");
-    await ctx.sync();
-    if (!tr.isNullObject && tr.length > 0) ranges = [tr];
-    else {
-      const sel = ctx.presentation.getSelectedShapes();
-      sel.load("items/type");
+    if (scope === "selection") {
+      const tr = ctx.presentation.getSelectedTextRangeOrNullObject();
+      tr.load("length,text");
       await ctx.sync();
-      ranges = sel.items.filter((s) => TEXTY.includes(s.type)).map((s) => s.textFrame.textRange);
-      ranges.forEach((r) => r.load("text"));
+      if (!tr.isNullObject && tr.length > 0) ranges = [tr];
+      else ranges = await textRangesOf(ctx, ctx.presentation.getSelectedShapes());
+      if (!ranges.length) throw new Error("Markér teksten eller tekstboksene med tallene");
+    } else {
+      const slides = scope === "deck" ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
+      slides.load("items/id");
       await ctx.sync();
+      for (const slide of slides.items) ranges.push(...await textRangesOf(ctx, slide.shapes));
     }
-    if (!ranges.length) throw new Error("Markér teksten eller tekstboksene med tallene");
+    ranges = await loadEach(ctx, ranges, (r) => r.load("text"));
     let total = 0;
     for (const r of ranges) {
-      const { out, count } = reformatText(r.text, opts);
-      if (count) { r.text = out; total += count; }
+      const { edits } = reformatText(r.text || "", opts);
+      // Bagfra, så positionerne passer; kun tallet skiftes, resten af formateringen bevares.
+      for (const e of edits.reverse()) r.getSubstring(e.start, e.length).text = e.text;
+      total += edits.length;
     }
     await ctx.sync();
     return total;
+  });
+}
+
+// ---------- Skrift og overskrifter ----------
+// Temaets standardskrifter læses fra filen hver gang (så de passer til den åbne præsentation):
+// overskrifter får overskriftsfonten og Kvadrants 25 pt, al anden tekst brødtekstfonten.
+// Symbolskrifter og tekst med blandede skrifter røres ikke.
+const TITLE_PT = 25;
+const SYMBOL_FONT = /symbol|wingdings|webdings|marlett|phosphor|icon/i;
+async function themeFonts() {
+  const p = await readPresentation(0).catch(() => ({}));
+  if (p.fonts?.length) state.fonts = p.fonts;
+  if (!state.fonts.length) throw new Error("Kunne ikke læse temaets skrifttyper");
+  return { major: state.fonts[0], minor: state.fonts[1] || state.fonts[0] };
+}
+async function fixFonts({ scope = "slide" }) {
+  const { major, minor } = await themeFonts();
+  const ok = new Set([major, minor].map((f) => f.toLowerCase()));
+  return run(async (ctx) => {
+    const slides = scope === "deck" ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
+    slides.load("items/id");
+    await ctx.sync();
+    let shapes = [];
+    for (const slide of slides.items) shapes.push(...await textShapesOf(ctx, slide.shapes));
+    shapes = await loadEach(ctx, shapes, (s) => s.textFrame.textRange.load("text,font/name,font/size"));
+    let fixed = 0, mixed = 0, titles = 0;
+    for (const s of shapes) {
+      const r = s.textFrame.textRange, name = r.font.name, isTitle = /title|titel/i.test(s.name);   // samme regel som Tjek
+      if (!r.text.trim()) continue;
+      if (isTitle && r.font.size !== TITLE_PT) { r.font.size = TITLE_PT; titles++; }
+      if (name && (ok.has(name.toLowerCase()) || SYMBOL_FONT.test(name))) continue;
+      if (!name) { mixed++; continue; }   // flere skrifter i samme felt: kan ikke ses pr. ord, så den lades være
+      r.font.name = isTitle ? major : minor;
+      fixed++;
+    }
+    await ctx.sync();
+    return { fixed, mixed, titles, major, minor };
   });
 }
 
@@ -925,7 +1007,7 @@ const OPS = {
   check: (progress) => runCheck(progress),
   goTo, fixAll,
   bankStatus, bankSync: (progress) => bankSync(progress), bankAdd, bankFlush: (progress) => bankFlush(progress),
-  formatNumbers, cleanCopy: (progress) => cleanCopy(progress),
+  formatNumbers, fixFonts, themeFonts, cleanCopy: (progress) => cleanCopy(progress),
   formatCharts: (opts, progress) => formatCharts(opts, progress),
 };
 // Ops, der sender fremskridt undervejs, får en progress-funktion som sidste argument.
