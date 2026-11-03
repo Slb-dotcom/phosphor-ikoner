@@ -3,6 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
+const TOOLS_BUILD = "2026-11-03b";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -913,6 +914,7 @@ function openDialog(page, view, size) {
   return new Promise((done) => {
     closeDialog();
     const url = new URL(page, location.href);
+    url.searchParams.set("v", TOOLS_BUILD);   // ny version = ny adresse, så Office ikke viser en gemt, gammel side
     if (view) url.hash = view;
     const open = (retry) => Office.context.ui.displayDialogAsync(url.href, { ...size, displayInIframe: false }, (r) => {
       // 12007: der er allerede et vindue åbent; det forrige lukker lige nu.
