@@ -340,8 +340,9 @@ function translate(word) {
 // Kvadrant-ordbog (ordbog.json): ord -> håndplukkede ikoner. Har forrang for DANISH og Phosphors egne tags,
 // så fx "marked" giver geografi, ikke grøntsager.
 let ORDBOG = {}, ORDBOG_KEYS = [];
+const stems = (word) => [word, ...ENDINGS.filter((e) => word.endsWith(e) && word.length - e.length >= 2).map((e) => word.slice(0, -e.length))];
 function curated(word) {
-  const forms = [word, ...ENDINGS.filter((e) => word.endsWith(e) && word.length - e.length >= 2).map((e) => word.slice(0, -e.length))];
+  const forms = stems(word);
   for (const f of forms) if (ORDBOG[f]) return ORDBOG[f];
   // Sammensatte ord: hjemmemarkedet -> hjemmemarked -> ...marked
   for (const f of forms) {
@@ -349,6 +350,18 @@ function curated(word) {
     if (key) return ORDBOG[key];
   }
   return null;
+}
+
+// Deleord (2. prioritet): ordbogsord der indeholder det søgte ord, fx "kunde" -> slutkunde, kundeværdi; "slut" -> slutkunde.
+// Tager første ikon fra hvert ord, så andet, osv., så de korteste/nærmeste ord kommer først.
+function partial(word) {
+  const own = curated(word);
+  const parts = stems(word).filter((s) => s.length >= 3);
+  const keys = ORDBOG_KEYS.filter((k) => ORDBOG[k] !== own && parts.some((s) => k !== s && k.includes(s)))
+    .sort((a, b) => a.length - b.length);
+  const out = [];
+  for (let i = 0; keys.some((k) => ORDBOG[k][i]); i++) keys.forEach((k) => ORDBOG[k][i] && out.push(ORDBOG[k][i]));
+  return out;
 }
 
 const words = (text) => (text.toLowerCase().match(/[a-zæøå0-9]+/g) || []).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
@@ -392,7 +405,7 @@ function search(query) {
   const raw = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
   if (!raw.length) return state.meta.map((i) => i.n);
   // Ordbogens ikoner først; ord fra ordbogen oversættes ikke videre, så "marked" ikke giver butik/grønt.
-  const first = [...new Set(raw.flatMap((t) => curated(t) || []))];
+  const first = [...new Set([...raw.flatMap((t) => curated(t) || []), ...raw.flatMap(partial)])];
   const terms = raw.map((t) => (curated(t) ? [t] : [t, ...translate(t)]));
   const scored = [];
   for (const { n, t } of state.meta) {
