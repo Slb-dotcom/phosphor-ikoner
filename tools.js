@@ -740,7 +740,7 @@ function openDialog(page, view, size) {
   });
 }
 
-const TOOLS_SIZE = { width: 52, height: 74 };
+const TOOLS_SIZE = { width: 96, height: 94 };   // næsten fuld skærm; Esc lukker
 const SMALL_SIZE = { width: 22, height: 40 };
 const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
 function showBar() {

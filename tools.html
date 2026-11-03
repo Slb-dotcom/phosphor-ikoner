@@ -624,7 +624,7 @@ async function loadBank() {
   const opt = (list) => list.map(([c, n]) => `<option value="${c}">${c} · ${esc(n)}</option>`).join("");
   if (!$("addPractice").options.length) {
     $("addPractice").innerHTML = '<option value="ALL">Alle praksisser</option>' + opt(bank.practices);
-    $("addPractice").value = bank.practices[0][0];
+    $("addPractice").value = "CT";
     $("addStep").innerHTML = opt(bank.steps);
   }
   const when = bank.synced ? new Date(bank.synced).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
