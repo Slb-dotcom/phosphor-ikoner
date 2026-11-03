@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03f";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03g";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -1108,19 +1108,26 @@ async function eyebrowItems({ names = true } = {}) {
   });
 }
 
-async function reviewGo(it) {
-  await run(async (ctx) => {
+// Går til fundet i PowerPoint og sender et billede af sliden med figurens placering tilbage, så vinduet kan vise, hvor det er.
+async function reviewGo(it, withImage = true) {
+  return run(async (ctx) => {
     ctx.presentation.setSelectedSlides([it.slideId]);
     await ctx.sync();
-    if (!it.shapeId) return;
-    try { ctx.presentation.slides.getItem(it.slideId).setSelectedShapes([it.shapeId]); await ctx.sync(); } catch {}
-    if (it.kind === "text" && it.before) {
+    let box = null, img = null;
+    if (it.shapeId) {
+      try { ctx.presentation.slides.getItem(it.slideId).setSelectedShapes([it.shapeId]); await ctx.sync(); } catch {}
       try {
         const s = await findShape(ctx, it.slideId, it.shapeId);
-        s.textFrame.textRange.getSubstring(it.start, it.before.length).setSelected();
+        s.load("left,top,width,height");
+        if (it.kind === "text" && it.before) s.textFrame.textRange.getSubstring(it.start, it.before.length).setSelected();
         await ctx.sync();
+        box = { left: s.left, top: s.top, width: s.width, height: s.height };
       } catch {}
     }
+    if (withImage) {
+      try { const r = ctx.presentation.slides.getItem(it.slideId).getImageAsBase64({ width: 1280 }); await ctx.sync(); img = r.value; } catch {}
+    }
+    return { img, box, w: state.slideSize.w, h: state.slideSize.h };
   });
 }
 
@@ -1348,27 +1355,15 @@ async function insertPicture(key) {
 }
 
 // ---------- Masters ----------
-// Hvilken master (og dermed CVI) hver slide bruger, så slides uden fx Elixirr-masteren kan findes.
+// Alle masters (med CVI, layouts og hvilke slides der bruger dem), så man selv kan vælge, hvilke der skal væk.
 async function mastersReport() {
   const info = KvPptx.masterInfo(await readXmlParts());
   return run(async (ctx) => {
     const { list } = await slideNumbers(ctx);
-    return { masters: info.masters.map(({ path, ...m }) => ({ ...m, slides: m.slides.length })),
-      slides: info.slides.map((s) => ({ slide: s.index + 1, slideId: list[s.index]?.id, family: s.family, name: KvPptx.FAMILY_NAMES[s.family] })) };
+    return { masters: info.masters.map((m) => ({ ...m, slideNos: m.slides.map((i) => i + 1), slideIds: m.slides.map((i) => list[i]?.id).filter(Boolean), slides: m.slides.length })) };
   });
 }
 const openCopy = (files) => PowerPoint.createPresentation(bytesToB64(KvPptx.zip(files)));
-async function masterCleanCopy({ layouts = false } = {}, progress) {
-  await window.kvLoadFflate();
-  progress("Læser præsentationen …");
-  const files = fflate.unzipSync(await readFileBytes());
-  progress("Fjerner ubrugte masters …");
-  const r = KvPptx.dropUnused(files, { layouts });
-  if (!r.masters && !r.layouts) return r;
-  progress("Åbner den oprydde kopi …");
-  await openCopy(files);
-  return r;
-}
 
 // ---------- Gør filen mindre ----------
 // Billeder, der er større end de vises (over dpi), skaleres ned i en kopi. JPEG forbliver JPEG (kvalitet 85 %), PNG forbliver PNG.
@@ -1422,81 +1417,12 @@ async function shrinkCopy({ dpi = 150, masters = true } = {}, progress) {
   return { images: done, saved, masters: dropped.masters };
 }
 
-// ---------- Figur-snippets ----------
-// Office.js kan ikke kopiere figurer, så de markerede figurer læses som XML (fra sliden eksporteret som .pptx) og gemmes som en
-// beskrivelse: form, placering, fyld, streg, tekst og billeder/ikoner. Ved indsættelse tegnes de igen med temaets farver.
+// ---------- Figurer ----------
+// En figur gemmes som en slide, der kun indeholder de markerede figurer (på et tomt layout, uden noter). Ved indsættelse lægges
+// sliden ind efter den, man står på, med figurerne markeret, så de kan kopieres derfra (Ctrl+C) til den slide, de skal bruges på.
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main", A_NS = DML_NS;
-const SVG_NS_EXT = "http://schemas.microsoft.com/office/drawing/2016/SVG/main";
-const kidsNS = (el, ns, name) => [...(el?.children || [])].filter((c) => c.namespaceURI === ns && c.localName === name);
-const kid = (el, ns, name) => kidsNS(el, ns, name)[0];
 const deep = (el, ns, name) => el?.getElementsByTagNameNS(ns, name)[0];
-function colorSpec(el) {   // <a:solidFill> eller fillRef/lnRef → { hex | scheme, lumMod, lumOff, alpha }
-  const c = el && [...el.children].find((x) => ["srgbClr", "schemeClr", "sysClr", "prstClr"].includes(x.localName));
-  if (!c) return null;
-  const mod = (n) => { const v = [...c.children].find((x) => x.localName === n)?.getAttribute("val"); return v == null ? undefined : +v / 100000; };
-  const base = c.localName === "srgbClr" ? { hex: c.getAttribute("val") } : c.localName === "sysClr" ? { hex: c.getAttribute("lastClr") || "000000" }
-    : c.localName === "schemeClr" ? { scheme: c.getAttribute("val") } : { hex: c.getAttribute("val") === "white" ? "FFFFFF" : "000000" };
-  return { ...base, lumMod: mod("lumMod"), lumOff: mod("lumOff"), alpha: mod("alpha") };
-}
-function xfrmOf(el, tf) {
-  const pr = kid(el, P_NS, el.localName === "grpSp" ? "grpSpPr" : "spPr");
-  const x = kid(pr, A_NS, "xfrm");
-  if (!x) return null;
-  const off = kid(x, A_NS, "off"), ext = kid(x, A_NS, "ext");
-  const box = tf({ x: +off.getAttribute("x"), y: +off.getAttribute("y"), cx: +ext.getAttribute("cx"), cy: +ext.getAttribute("cy") });
-  return { ...box, rot: +(x.getAttribute("rot") || 0) / 60000, flipH: x.getAttribute("flipH") === "1", flipV: x.getAttribute("flipV") === "1", el: x };
-}
-function textSpec(el) {
-  const body = kid(el, P_NS, "txBody");
-  if (!body) return null;
-  const paras = kidsNS(body, A_NS, "p");
-  const text = paras.map((p) => [...p.children].map((r) => (r.localName === "r" || r.localName === "fld" ? deep(r, A_NS, "t")?.textContent || "" : r.localName === "br" ? "\v" : "")).join("")).join("\n");
-  if (!text.trim()) return null;
-  const rPr = deep(body, A_NS, "rPr") || deep(body, A_NS, "endParaRPr");
-  const bp = kid(body, A_NS, "bodyPr");
-  const ins = (n, d) => (bp?.getAttribute(n) != null ? +bp.getAttribute(n) / 12700 : d);
-  return { text, size: rPr?.getAttribute("sz") ? +rPr.getAttribute("sz") / 100 : null, bold: rPr?.getAttribute("b") === "1",
-    font: deep(rPr, A_NS, "latin")?.getAttribute("typeface") || null, color: colorSpec(kid(rPr, A_NS, "solidFill")),
-    align: deep(body, A_NS, "pPr")?.getAttribute("algn") || null, anchor: bp?.getAttribute("anchor") || null,
-    insets: [ins("lIns", 7.2), ins("tIns", 3.6), ins("rIns", 7.2), ins("bIns", 3.6)] };
-}
-function shapeSpec(el, tf, files, relMap) {
-  const name = deep(el, P_NS, "cNvPr")?.getAttribute("name") || "";
-  if (el.localName === "grpSp") {
-    // Børnenes koordinater er i gruppens eget system (chOff/chExt) og regnes om til gruppens boks på sliden.
-    const g = xfrmOf(el, tf);
-    if (!g) return null;
-    const chOff = kid(g.el, A_NS, "chOff"), chExt = kid(g.el, A_NS, "chExt");
-    const cx = +chExt?.getAttribute("cx") || 1, cy = +chExt?.getAttribute("cy") || 1, ox = +(chOff?.getAttribute("x") || 0), oy = +(chOff?.getAttribute("y") || 0);
-    const sub = (b) => ({ x: g.x + (b.x - ox) * (g.cx / cx), y: g.y + (b.y - oy) * (g.cy / cy), cx: b.cx * (g.cx / cx), cy: b.cy * (g.cy / cy) });
-    const items = [...el.children].map((c) => shapeSpec(c, sub, files, relMap)).filter(Boolean);
-    return items.length ? { type: "group", name, items } : null;
-  }
-  if (!["sp", "cxnSp", "pic"].includes(el.localName)) return null;
-  const x = xfrmOf(el, tf);
-  if (!x) return null;
-  const pos = { left: x.x / 12700, top: x.y / 12700, width: x.cx / 12700, height: x.cy / 12700, rot: x.rot, name };
-  const spPr = kid(el, P_NS, "spPr"), style = kid(el, P_NS, "style");
-  const ln = kid(spPr, A_NS, "ln");
-  const line = ln && kid(ln, A_NS, "noFill") ? null
-    : { color: colorSpec(kid(ln, A_NS, "solidFill")) || (style && colorSpec(kid(style, A_NS, "lnRef"))), weight: ln?.getAttribute("w") ? +ln.getAttribute("w") / 12700 : null };
-  if (el.localName === "pic") {
-    const blip = deep(el, A_NS, "blip");
-    const svg = blip && blip.getElementsByTagNameNS(SVG_NS_EXT, "svgBlip")[0];
-    const media = relMap[(svg || blip)?.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "embed")];
-    if (!media || !files[media]) return null;
-    const format = svg ? "svg" : /\.png$/i.test(media) ? "png" : /\.jpe?g$/i.test(media) ? "jpeg" : null;
-    if (!format) return null;
-    return { type: "image", ...pos, format, data: svg ? fflate.strFromU8(files[media]) : bytesToB64(files[media]) };
-  }
-  if (el.localName === "cxnSp") return { type: "line", ...pos, flipH: x.flipH, flipV: x.flipV, line: line?.color ? line : { color: { scheme: "tx1" }, weight: 0.75 } };
-  const prst = kid(spPr, A_NS, "prstGeom");
-  const fillEl = kid(spPr, A_NS, "solidFill");
-  const fill = kid(spPr, A_NS, "noFill") ? null : fillEl ? colorSpec(fillEl) : style ? colorSpec(kid(style, A_NS, "fillRef")) : null;
-  const adj = prst && deep(prst, A_NS, "gd")?.getAttribute("fmla");
-  return { type: "shape", ...pos, geom: prst?.getAttribute("prst") || "rect", adj: adj ? +adj.replace(/\D/g, "") / 100000 : null,
-    textBox: deep(el, P_NS, "cNvSpPr")?.getAttribute("txBox") === "1", fill, line: line?.color ? line : null, text: textSpec(el) };
-}
+const SHAPE_TAGS = ["sp", "pic", "cxnSp", "grpSp", "graphicFrame", "contentPart"];
 async function snippetCapture() {
   await window.kvLoadFflate();
   const cap = await run(async (ctx) => {
@@ -1505,144 +1431,84 @@ async function snippetCapture() {
     slides.load("items/id");
     sel.load("items/id,items/name,items/left,items/top,items/width,items/height");
     await ctx.sync();
-    if (!sel.items.length || !slides.items[0]) throw new Error("Markér de figurer, der skal gemmes som snippet");
+    if (!sel.items.length || !slides.items[0]) throw new Error("Markér de figurer, der skal gemmes");
     const slide = slides.items[0];
     const data = slide.exportAsBase64(), img = slide.getImageAsBase64({ width: 1600 });
     await ctx.sync();
     const it = sel.items;
-    return { data: data.value, img: img.value, shapes: it.map((s) => ({ id: s.id, name: s.name, left: s.left, top: s.top })),
+    return { data: data.value, img: img.value, shapes: it.map((s) => ({ id: s.id, name: s.name, left: s.left })),
       box: { left: Math.min(...it.map((s) => s.left)), top: Math.min(...it.map((s) => s.top)),
         right: Math.max(...it.map((s) => s.left + s.width)), bottom: Math.max(...it.map((s) => s.top + s.height)) } };
   });
   const files = fflate.unzipSync(b64ToBytes(cap.data));
-  const path = Object.keys(files).find((k) => /^ppt\/slides\/slide\d+\.xml$/.test(k));
+  const path = KvPptx.slideList(files)[0].path;
   const doc = new DOMParser().parseFromString(fflate.strFromU8(files[path]), "application/xml");
-  const relMap = Object.fromEntries(KvPptx.rels(files, path).map((r) => [r.id, r.path]));
   const tree = doc.getElementsByTagNameNS(P_NS, "spTree")[0];
-  const top = [...tree.children].filter((el) => ["sp", "pic", "cxnSp", "grpSp", "graphicFrame"].includes(el.localName));
+  const top = [...tree.children].filter((el) => SHAPE_TAGS.includes(el.localName));
   const nv = (el) => deep(el, P_NS, "cNvPr");
   const want = new Set(cap.shapes.map((s) => String(s.id).split("#")[0]));
   let picked = top.filter((el) => want.has(nv(el)?.getAttribute("id")));
   if (picked.length < cap.shapes.length) {   // id'erne passede ikke: find dem på navn og placering
     picked = cap.shapes.map((s) => top.find((el) => nv(el)?.getAttribute("name") === s.name && Math.abs(+(deep(el, A_NS, "off")?.getAttribute("x") || 0) / 12700 - s.left) < 2)).filter(Boolean);
   }
-  const items = picked.map((el) => shapeSpec(el, (b) => b, files, relMap)).filter(Boolean);
-  if (!items.length) throw new Error("De markerede figurer kan ikke gemmes (tabeller og grafer understøttes ikke)");
-  const key = "outbox:snippet";
+  if (!picked.length) throw new Error("De markerede figurer blev ikke fundet på sliden");
+  for (const el of top) if (!picked.includes(el)) el.remove();
+  files[path] = fflate.strToU8(new XMLSerializer().serializeToString(doc));
+  KvPptx.blankSlide(files, path);
   const { w, h } = state.slideSize;
-  await dbDo("data", "readwrite", (st) => st.put({ id: key, items, box: cap.box, img: cap.img, slide: { w, h }, skipped: picked.length - items.length + (cap.shapes.length - picked.length) }));
+  const key = "outbox:snippet";
+  await dbDo("data", "readwrite", (st) => st.put({ id: key, data: bytesToB64(KvPptx.zip(files)), img: cap.img, box: cap.box, slide: { w, h }, count: picked.length }));
   return key;
 }
-const SCHEME_SLOT = { bg1: "Baggrund 1", tx1: "Tekst 1", bg2: "Baggrund 2", tx2: "Tekst 2", lt1: "Baggrund 1", dk1: "Tekst 1", lt2: "Baggrund 2", dk2: "Tekst 2",
-  accent1: "Accent 1", accent2: "Accent 2", accent3: "Accent 3", accent4: "Accent 4", accent5: "Accent 5", accent6: "Accent 6" };
-function resolveColor(c) {
-  if (!c) return null;
-  let hex = c.hex || themeHex(SCHEME_SLOT[c.scheme], "262139");
-  if (c.lumMod != null || c.lumOff != null) {   // lysere/mørkere variant af temafarven
-    const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-    const max = Math.max(...rgb), min = Math.min(...rgb), l = (max + min) / 2, d = max - min;
-    const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-    const hue = !d ? 0 : max === rgb[0] ? ((rgb[1] - rgb[2]) / d) % 6 : max === rgb[1] ? (rgb[2] - rgb[0]) / d + 2 : (rgb[0] - rgb[1]) / d + 4;
-    const l2 = Math.min(1, Math.max(0, l * (c.lumMod ?? 1) + (c.lumOff ?? 0)));
-    const C = (1 - Math.abs(2 * l2 - 1)) * s, X = C * (1 - Math.abs(((hue % 2) + 2) % 2 - 1)), m = l2 - C / 2;
-    const seg = [[C, X, 0], [X, C, 0], [0, C, X], [0, X, C], [X, 0, C], [C, 0, X]][((Math.floor(hue) % 6) + 6) % 6];
-    hex = seg.map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
-  }
-  return { hex: "#" + hex.toUpperCase(), transparency: c.alpha != null ? 1 - c.alpha : 0 };
-}
-const GEOM_NAMES = { rect: "Rectangle", roundRect: "RoundRectangle", round1Rect: "Round1Rectangle", round2SameRect: "Round2SameRectangle",
-  round2DiagRect: "Round2DiagonalRectangle", snip1Rect: "Snip1Rectangle", snip2SameRect: "Snip2SameRectangle", snip2DiagRect: "Snip2DiagonalRectangle", snipRoundRect: "SnipRoundRectangle" };
-function geomType(prst) {
-  const t = GEOM_NAMES[prst] || prst[0].toUpperCase() + prst.slice(1);
-  return Object.values(PowerPoint.GeometricShapeType || {}).includes(t) ? t : "Rectangle";
-}
-const ALIGN = { l: "Left", ctr: "Center", r: "Right", just: "Justify" }, ANCHOR = { t: "Top", ctr: "Middle", b: "Bottom" };
-async function drawItem(slideId, it, dx, dy) {
-  const box = { left: it.left + dx, top: it.top + dy, width: Math.max(1, it.width), height: Math.max(it.type === "line" ? 0 : 1, it.height) };
-  if (it.type === "group") {
-    const ids = [];
-    for (const c of it.items) ids.push(...await drawItem(slideId, c, dx, dy));
-    if (ids.length < 2) return ids;
-    return run(async (ctx) => {
-      try {
-        const g = ctx.presentation.slides.getItem(slideId).shapes.addGroup(ids);
-        g.load("id");
-        if (it.name) g.name = it.name;
-        await ctx.sync();
-        return [g.id];
-      } catch { return ids; }
-    });
-  }
-  if (it.type === "image") {
-    await deselect(slideId);
-    if (it.format === "svg") await insertSvg(it.data, { imageLeft: box.left, imageTop: box.top, imageWidth: box.width, imageHeight: box.height });
-    else await insertImageData(it.data, { imageLeft: box.left, imageTop: box.top, imageWidth: box.width, imageHeight: box.height });
-    return run(async (ctx) => {
-      const sel = ctx.presentation.getSelectedShapes();
-      sel.load("items/id");
-      await ctx.sync();
-      const s = sel.items[sel.items.length - 1];
-      if (s && it.name) s.name = it.name;
-      await ctx.sync();
-      return s ? [s.id] : [];
-    });
-  }
-  return run(async (ctx) => {
-    const shapes = ctx.presentation.slides.getItem(slideId).shapes;
-    let s;
-    if (it.type === "line") {
-      s = shapes.addLine("Straight", { left: box.left, top: box.top, width: box.width, height: box.height });
-      const c = resolveColor(it.line?.color);
-      if (c) s.lineFormat.color = c.hex;
-      if (it.line?.weight) s.lineFormat.weight = it.line.weight;
-    } else {
-      s = it.textBox ? shapes.addTextBox(it.text?.text || "", box) : shapes.addGeometricShape(geomType(it.geom), box);
-      const f = resolveColor(it.fill);
-      if (f) { s.fill.setSolidColor(f.hex); if (f.transparency) s.fill.transparency = f.transparency; }
-      else if (!it.textBox) s.fill.clear();
-      const l = resolveColor(it.line?.color);
-      if (l) { s.lineFormat.color = l.hex; if (it.line.weight) s.lineFormat.weight = it.line.weight; }
-      else s.lineFormat.visible = false;
-      const t = it.text;
-      if (t) {
-        const tf = s.textFrame, r = tf.textRange;
-        if (!it.textBox) r.text = t.text;
-        tf.autoSizeSetting = "AutoSizeNone";
-        tf.wordWrap = true;
-        [tf.leftMargin, tf.topMargin, tf.rightMargin, tf.bottomMargin] = t.insets;
-        if (t.anchor && ANCHOR[t.anchor]) tf.verticalAlignment = ANCHOR[t.anchor];
-        if (t.size) r.font.size = t.size;
-        r.font.bold = !!t.bold;
-        if (t.font && !t.font.startsWith("+")) r.font.name = t.font;
-        const tc = resolveColor(t.color);
-        if (tc) r.font.color = tc.hex;
-        if (t.align && ALIGN[t.align]) r.paragraphFormat.horizontalAlignment = ALIGN[t.align];
-      }
-    }
-    if (it.name) s.name = it.name;
-    s.load("id");
-    await ctx.sync();
-    if (it.adj != null && s.adjustments?.set) { try { s.adjustments.set(0, it.adj); await ctx.sync(); } catch {} }
-    return [s.id];
-  });
-}
-// Indsætter på den slide, man står på, samme sted som originalen (eller lidt forskudt, hvis der allerede ligger noget der).
+// Sætter figur-sliden ind efter den slide, man står på, går til den og markerer figurerne.
 async function snippetInsert(key) {
   const rec = await dbDo("data", "readonly", (st) => st.get(key));
-  if (!rec) throw new Error("Snippet'en kunne ikke hentes");
-  await ensureTheme();
-  const slideId = await run(async (ctx) => {
-    const s = ctx.presentation.getSelectedSlides();
-    s.load("items/id");
+  if (!rec) throw new Error("Figuren kunne ikke hentes");
+  const n = await run(async (ctx) => {
+    const sel = ctx.presentation.getSelectedSlides(), all = ctx.presentation.slides;
+    sel.load("items/id");
+    all.load("items/id");
     await ctx.sync();
-    if (!s.items[0]) throw new Error("Stå på en slide først");
-    return s.items[0].id;
+    const before = new Set(all.items.map((s) => s.id));
+    const opts = { formatting: "UseDestinationTheme" };
+    if (sel.items[0]) opts.targetSlideId = sel.items[0].id;
+    ctx.presentation.insertSlidesFromBase64(rec.data, opts);
+    await ctx.sync();
+    const now = ctx.presentation.slides;
+    now.load("items/id");
+    await ctx.sync();
+    const added = now.items.find((s) => !before.has(s.id));
+    if (!added) return 0;
+    ctx.presentation.setSelectedSlides([added.id]);
+    const shapes = added.shapes;
+    shapes.load("items/id");
+    await ctx.sync();
+    try { added.setSelectedShapes(shapes.items.map((s) => s.id)); await ctx.sync(); } catch {}
+    return shapes.items.length;
   });
-  const ids = [];
-  for (const it of rec.items) ids.push(...await drawItem(slideId, it, 0, 0));
-  await run(async (ctx) => { ctx.presentation.slides.getItem(slideId).setSelectedShapes(ids); await ctx.sync(); }).catch(() => {});
   await dbDo("data", "readwrite", (st) => st.delete(key));
-  return ids.length;
+  return n;
+}
+
+// ---------- Flyt slides til Elixirr ----------
+// Laves i en kopi: slides på de valgte masters flyttes til det Elixirr-layout, der passer (forside, afsnit, agenda, slut,
+// tom eller indhold). Indholdet bliver, hvor det er, så kun masteren (logo, baggrund, skrift) skifter. Har præsentationen
+// ingen Elixirr-master, hentes den fra templatet (vinduet lægger det i IndexedDB som "tmp:template").
+async function elixirrCopy({ remove = [], template = null }, progress) {
+  await window.kvLoadFflate();
+  progress("Læser præsentationen …");
+  const files = fflate.unzipSync(await readFileBytes());
+  let tpl = null;
+  if (template) {
+    const rec = await dbDo("data", "readonly", (st) => st.get(template));
+    if (rec) tpl = fflate.unzipSync(rec.data instanceof Uint8Array ? rec.data : new Uint8Array(rec.data));
+    await dbDo("data", "readwrite", (st) => st.delete(template));
+  }
+  progress("Flytter slides til Elixirr …");
+  const r = KvPptx.moveToElixirr(files, { remove, template: tpl });
+  progress("Åbner kopien …");
+  await openCopy(files);
+  return r;
 }
 
 // ---------- Det, vinduerne kan bede om ----------
@@ -1663,10 +1529,10 @@ const OPS = {
   findText, numberItems, checkItems: (progress) => checkItems(progress), eyebrowItems, reviewGo, reviewApply,
   guidesToggle, snapToGrid, setGap,
   insertPicture, snippetCapture, snippetInsert,
-  mastersReport, masterCleanCopy, sizeReport, shrinkCopy,
+  mastersReport, elixirrCopy, sizeReport, shrinkCopy,
 };
 // Ops, der sender fremskridt undervejs, får en progress-funktion som sidste argument.
-const WITH_PROGRESS = new Set(["saveSlides", "check", "bankSync", "bankFlush", "cleanCopy", "formatCharts", "checkItems", "masterCleanCopy", "sizeReport", "shrinkCopy"]);
+const WITH_PROGRESS = new Set(["saveSlides", "check", "bankSync", "bankFlush", "cleanCopy", "formatCharts", "checkItems", "elixirrCopy", "sizeReport", "shrinkCopy"]);
 
 // ---------- Vinduer ----------
 let dialog = null;

@@ -161,6 +161,12 @@
   .rv-item .where { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
   .rv-item del { background: #F6D5DB; color: #6B1F2E; text-decoration: line-through; padding: 0 2px; border-radius: 3px; }
   .rv-item ins { background: var(--yellow-soft); color: var(--ink); text-decoration: none; font-weight: 600; padding: 0 2px; border-radius: 3px; }
+  .rv-view { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
+  .rv-slide { position: relative; aspect-ratio: 16 / 9; background: var(--soft); border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+  .rv-slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .rv-box { position: absolute; border: 3px solid var(--yellow); border-radius: 4px; box-shadow: 0 0 0 1px var(--ink), 0 0 0 100vmax rgba(38, 33, 57, .28); transition: all .15s; }
+  .rv-side { display: grid; gap: 10px; align-content: start; }
+  @media (max-width: 760px) { .rv-view { grid-template-columns: 1fr; } }
   .rv-list { display: grid; gap: 2px; max-height: 300px; overflow-y: auto; scrollbar-width: thin; }
   .rv-row { display: flex; gap: 8px; align-items: baseline; font-size: 12px; padding: 4px 8px; border-radius: 5px; border: 0; background: none; text-align: left; width: 100%; }
   .rv-row:hover { background: var(--bg); }
@@ -275,11 +281,11 @@
   </section>
 
   <section id="pictures">
-    <div><h1>Billeder & CV</h1><p class="lead">Godkendte billeder fra Kvadrants billedbank (portrætter, kontor, miljø, royalty free) og CV'er fra Kvadrant CVs.pptx. Søg på en persons navn for at finde både portrættet og CV'et.</p></div>
+    <div><h1>Billeder & CV</h1><p class="lead">Godkendte billeder fra SHARED FOLDER FOR PHOSPOR &gt; Billeder (portrætter, kontor, miljø, royalty free) og CV'er fra Kvadrant CVs.pptx i 20 Sales. Søg på en persons navn for at finde både portrættet og CV'et.</p></div>
     <div class="card">
-      <div class="row"><span class="hint" id="picStatus">Henter billedbanken …</span><span class="spacer"></span>
-        <button class="primary" id="picPick" hidden>Forbind til billedbanken</button><button class="ghost" id="picRescan" hidden>Opdatér</button></div>
-      <div class="row"><span class="hint" id="cvStatus"></span><span class="spacer"></span><button class="ghost" id="cvPick">Vælg CV-filen</button></div>
+      <div class="row"><span class="hint" id="picStatus">Henter billederne …</span><span class="spacer"></span>
+        <button class="primary" id="picConnect" hidden>Forbind</button><button class="ghost" id="picRescan" hidden>Opdatér</button></div>
+      <div class="row"><span class="hint" id="cvStatus"></span></div>
       <div class="search">
         <svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
         <input id="picSearch" type="text" placeholder="Søg på en kollegas for- eller efternavn, eller på mappe, fx office" autocomplete="off" spellcheck="false">
@@ -292,7 +298,7 @@
   </section>
 
   <section id="snippets">
-    <div><h1>Figurer</h1><p class="lead">Gem markerede figurer, fx en boks med overskrift, en pil-proces eller et ikon med tekst, og sæt dem ind igen på andre slides. Farverne følger præsentationens tema.</p></div>
+    <div><h1>Figurer</h1><p class="lead">Gem markerede figurer, fx en boks med overskrift, en pil-proces eller et ikon med tekst. De gemmes som en slide, hvor der kun er figuren. Når du vælger en figur, sættes den slide ind efter den, du står på, med figuren markeret: kopiér med Ctrl+C, sæt ind på din slide med Ctrl+V, og slet figur-sliden igen.</p></div>
     <div class="card">
       <span class="label">Gem markerede figurer</span>
       <div class="row"><input class="wide" id="snipName" type="text" placeholder="Navn, fx 3-trins proces med pile" autocomplete="off"><button class="primary" id="snipSave">Gem som figur</button></div>
@@ -303,7 +309,7 @@
       <input id="snipSearch" type="text" placeholder="Søg i figurer" autocomplete="off" spellcheck="false">
     </div>
     <div class="pic-grid" id="snipList" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
-    <div class="hint">Former, streger, tekst, billeder og ikoner kommer med. Tabeller, grafer og specielle effekter (skygger, forløb) gør ikke. De sættes ind samme sted på sliden som originalen.</div>
+    <div class="hint">Figuren er en præcis kopi (også tabeller, grafer, skygger og forløb) og bruger præsentationens temafarver. Den ligger samme sted på sliden som originalen, så Ctrl+V lægger den samme sted.</div>
   </section>
 
   <section id="replace">
@@ -328,24 +334,25 @@
       <div class="row"><label class="field">Hvor <select id="rvScope"><option value="deck">Hele præsentationen</option><option value="slide">Markerede slides</option></select></label><span class="spacer"></span><button class="primary" id="rvRun">Find</button></div>
     </div>
     <div class="card" id="rvPanel" hidden>
-      <div class="row"><b id="rvPos"></b><span class="spacer"></span><button class="ghost" id="rvPrev">← Forrige</button><button class="ghost" id="rvNext">Næste →</button></div>
-      <div class="rv-item" id="rvItem"></div>
-      <div class="row"><button class="primary" id="rvApply">Ret <kbd>Enter</kbd></button><button class="ghost" id="rvSkip">Spring over</button><button class="ghost" id="rvAll"></button><span class="spacer"></span><button class="ghost" id="rvUndo">Fortryd <kbd style="font:600 10.5px Inter">Ctrl+Z</kbd></button></div>
+      <div class="row"><b id="rvPos"></b><span class="spacer"></span><button class="ghost" id="rvPrev">← Forrige</button><button class="ghost" id="rvNext">Næste</button></div>
+      <div class="rv-view">
+        <div class="rv-slide" id="rvSlide"><img id="rvImg" alt=""><div class="rv-box" id="rvBox" hidden></div></div>
+        <div class="rv-side">
+          <div class="rv-item" id="rvItem"></div>
+          <div class="row"><button class="primary" id="rvApply">Ret <kbd>Enter</kbd></button><button class="ghost" id="rvSkip">Fortsæt <kbd style="font:600 10.5px Inter">→</kbd></button></div>
+          <div class="row"><button class="ghost" id="rvAll"></button><button class="ghost" id="rvUndo">Fortryd <kbd style="font:600 10.5px Inter">Ctrl+Z</kbd></button></div>
+          <div class="hint">PowerPoint går også til sliden og markerer stedet.</div>
+        </div>
+      </div>
       <div class="rv-list" id="rvList"></div>
     </div>
   </section>
 
   <section id="masters">
-    <div><h1>Masters & filstørrelse</h1><p class="lead">Se hvilke slides der ikke bruger den master, I skal bruge (Elixirr, ny eller gammel Kvadrant-CVI). Fjern ubrugte masters, og gør filen mindre. Oprydningen laves altid i en kopi, så originalen ikke røres.</p></div>
+    <div><h1>Masters & filstørrelse</h1><p class="lead">Se alle masters i præsentationen, og vælg dem, der skal væk. Slides på en master, der fjernes, flyttes til Elixirr. Det laves altid i en kopi, så originalen ikke røres.</p></div>
     <div class="card">
-      <div class="row"><label class="field">Alle slides skal bruge <select id="msTarget"><option value="elixirr">Elixirr</option><option value="kvNew">Kvadrant · ny CVI (Inter)</option><option value="kvOld">Kvadrant · gammel CVI (Open Sans)</option></select></label><span class="spacer"></span><button class="primary" id="msRun">Tjek masters</button></div>
+      <div class="row"><span class="label">Masters</span><span class="spacer"></span><button class="primary" id="msRun">Vis masters</button></div>
       <div id="msResult" style="display:grid;gap:10px"></div>
-    </div>
-    <div class="card">
-      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Ryd op i masters</span>
-        <div class="hint" style="margin-top:4px">Masters, som ingen slide bruger, fjernes i en kopi, der åbner som en ny præsentation. Mange filer har 3-5 masters, når de skal have én.</div></div>
-        <button class="ghost" id="msClean">Lav kopi uden ubrugte masters</button></div>
-      <label class="check"><input type="checkbox" id="msLayouts"> Fjern også ubrugte layouts i de masters, der bliver</label>
     </div>
     <div class="card">
       <div class="row"><div style="flex:1;min-width:220px"><span class="label">Gør filen mindre</span>
@@ -403,7 +410,7 @@
     <div class="card">
       <div class="row"><span class="hint" id="bankStatus">Henter slidebanken …</span><span class="spacer"></span>
         <button class="ghost" id="bankFlush" hidden></button><button class="ghost" id="bankSync" hidden>Opdatér fra filen</button>
-        <button class="primary" id="folderPick" hidden>Forbind til slidebanken</button><button class="ghost" id="folderRescan" hidden>Opdatér</button></div>
+        <button class="primary" id="folderPick" hidden>Forbind</button><button class="ghost" id="folderRescan" hidden>Opdatér</button></div>
       <div class="chips" id="bankPractices"></div>
       <div class="chips small" id="bankSteps"></div>
       <div class="search">
@@ -526,6 +533,7 @@ function show(view) {
   if (view === "grid") { gLoad(); setTimeout(() => $("gridCols").focus(), 50); }
   if (view === "pictures") { picInit().catch(fail); setTimeout(() => $("picSearch").focus(), 50); }
   if (view === "snippets") snipLoad().catch(fail);
+  if (view === "masters" && ready && !msList.length) msRun();
   if (view === "replace") setTimeout(() => $("rvFind").focus(), 50);
   current = view;
 }
@@ -692,15 +700,36 @@ async function folderAccess(ask) {
   if (perm !== "granted" && ask) perm = await dirHandle.requestPermission({ mode: "readwrite" });
   return perm === "granted";
 }
-// Man kan have valgt "Slidebank" eller mappen over den.
-async function bankRoot() { return (await sub(dirHandle, bank.practices[0][1])) ? dirHandle : (await sub(dirHandle, "Slidebank")) || dirHandle; }
+// Faste stier i Kvadrant Consulting - Documents (SharePoint-biblioteket). Mappen vælges én gang; alt andet findes herfra.
+const SHARED_PATH = ["Business Analysts", "SHARED FOLDER FOR PHOSPOR"];
+const CV_PATH = ["20 Sales", "_10 CVs, pricelist, references and proposals", "Kvadrant CVs.pptx"];
+const TEMPLATE_PATH = ["60 KC Brand", "04 Templates", "01_PowerPoint", "Elixirr_UK_Powerpoint_Template_2026.potx"];
+async function walkTo(dir, parts) { for (const p of parts) { dir = dir && (await sub(dir, p)); } return dir || null; }
+const isLibrary = async () => !!dirHandle && !!(await sub(dirHandle, "Business Analysts"));
+// SHARED FOLDER FOR PHOSPOR, hvis den kan nås fra den valgte mappe (biblioteket eller selve den fælles mappe).
+async function sharedDir() {
+  if (!dirHandle) return null;
+  if (await isLibrary()) return walkTo(dirHandle, SHARED_PATH);
+  return (await sub(dirHandle, "Slidebank")) ? dirHandle : null;
+}
+async function libFile(parts) {
+  if (!(await isLibrary())) return null;
+  const d = await walkTo(dirHandle, parts.slice(0, -1));
+  try { return d ? await d.getFileHandle(parts[parts.length - 1]) : null; } catch { return null; }
+}
+// Man kan have valgt biblioteket, den fælles mappe, "Slidebank" eller (tidligere) en praksis-mappes forælder.
+async function bankRoot() {
+  const s = await sharedDir();
+  if (s) return (await sub(s, "Slidebank")) || s;
+  return (await sub(dirHandle, bank.practices[0][1])) ? dirHandle : (await sub(dirHandle, "Slidebank")) || dirHandle;
+}
 
 async function folderUI() {
   await folderInit();
   $("folderPick").hidden = folderMode;
   $("folderRescan").hidden = !folderMode;
   if (!folderMode) {
-    $("bankStatus").innerHTML = "Første gang: tryk <b>Forbind til slidebanken</b> og vælg mappen <b>Slidebank</b> i SHARED FOLDER FOR PHOSPOR. Windows kræver, at man selv peger på mappen én gang; derefter husker Kvadrant den.";
+    $("bankStatus").innerHTML = CONNECT_TEXT;
     $("bankSync").hidden = $("bankFlush").hidden = true;
     $("bankAdd").textContent = "Gem i slidebanken";
     $("addHint").textContent = "Vælg slidebank-mappen først.";
@@ -719,17 +748,29 @@ async function folderUI() {
 }
 let scanning = false;
 
-// Kun mappen "Slidebank" (eller mappen lige over den) godtages; den huskes, så man aldrig skal vælge igen.
+// Helst biblioteket "Kvadrant Consulting - Documents" (så slidebank, billeder, CV'er og template findes af sig selv);
+// den fælles mappe eller "Slidebank" godtages også. Valget huskes, så man aldrig skal vælge igen.
+const CONNECT_TEXT = "Første gang: tryk <b>Forbind</b> og vælg mappen <b>Kvadrant Consulting - Documents</b> (under Kvadrant i Stifinder). Det er den eneste gang, du skal vælge en mappe. Slidebank, billeder, CV'er og Elixirr-templatet findes derefter af sig selv.";
 async function pickFolder() {
   let picked;
   try { picked = await window.showDirectoryPicker({ id: "kvadrant-slidebank", mode: "readwrite", startIn: "documents" }); }
-  catch (e) { if (e.name !== "AbortError") fail(e); return; }
-  const ok = picked.name.toLowerCase() === "slidebank" || (await sub(picked, "Slidebank")) || (await sub(picked, bank.practices[0][1]));
-  if (!ok) { toast("Det er ikke slidebank-mappen. Vælg Kvadrant Consulting > Business Analysts > SHARED FOLDER FOR PHOSPOR > Slidebank"); return; }
+  catch (e) { if (e.name !== "AbortError") fail(e); return false; }
+  const lib = await sub(picked, "Business Analysts");
+  const ok = lib ? await walkTo(picked, [...SHARED_PATH, "Slidebank"])
+    : picked.name.toLowerCase() === "slidebank" || (await sub(picked, "Slidebank")) || (await sub(picked, bank.practices[0][1]));
+  if (!ok) { toast("Det er ikke den rigtige mappe. Vælg Kvadrant > Kvadrant Consulting - Documents"); return false; }
   dirHandle = picked;
   await idb("meta", "readwrite", (st) => st.put({ id: "_bankDir", source: "_", handle: dirHandle }));
   folderMode = true;
   await scanFolder();
+  return true;
+}
+// Tilføjelser må ikke huske adgangen, når PowerPoint lukkes: første gang i hver session skal man trykke "Giv adgang".
+// needLibrary: CV'er og template ligger uden for den fælles mappe, så der skal biblioteket være valgt.
+async function connect(needLibrary = false) {
+  await folderInit();
+  if (dirHandle && (await folderAccess(true)) && (!needLibrary || (await isLibrary()))) return true;
+  return pickFolder();
 }
 
 async function scanFolder() {
@@ -957,7 +998,8 @@ function renderIssues() {
 }
 
 // ---------- Billeder & CV ----------
-// Billedbanken (60 KC Brand > 05 Image bank) og CV-filen vælges én gang; adgangen og en liste over billeder og CV'er huskes i IndexedDB.
+// Billeder fra SHARED FOLDER FOR PHOSPOR > Billeder og CV'er fra 20 Sales > ... > Kvadrant CVs.pptx, begge fundet ud fra den
+// mappe, der er valgt én gang (se pickFolder). En liste over billeder og CV'er huskes i IndexedDB.
 // RAW-filer, psd og mapperne "RAW files", "Previous version" og "... (All)" springes over.
 const IMG_EXT = /\.(jpe?g|png)$/i, IMG_SKIP_DIR = /^(raw files|previous version)$|\(all\)/i;
 const MAX_PX = 2000;   // fuld slidebredde (13,3") ved 150 dpi
@@ -976,33 +1018,46 @@ async function fileAt(root, path) {
   return (await d.getFileHandle(path[path.length - 1])).getFile();
 }
 
+// Billederne ligger i SHARED FOLDER FOR PHOSPOR > Billeder (en kopi af billedbanken); er de lagt i en undermappe
+// (fx "05 Image bank"), gås der ned i den.
+async function imagesDir() {
+  let d = await sub(await sharedDir(), "Billeder");
+  for (let k = 0; d && k < 2; k++) {
+    const kids = [];
+    for await (const [n, h] of d.entries()) kids.push([n, h]);
+    const dirs = kids.filter(([, h]) => h.kind === "directory"), imgs = kids.filter(([n, h]) => h.kind === "file" && IMG_EXT.test(n));
+    if (dirs.length === 1 && !imgs.length) d = dirs[0][1]; else break;
+  }
+  return d;
+}
 async function picInit() {
-  if (!FS) { $("picStatus").textContent = "Denne version af PowerPoint kan ikke åbne mapper fra tilføjelser."; $("cvPick").hidden = true; return; }
-  picDir ||= (await meta("_imgDir"))?.handle || null;
-  cvHandle ||= (await meta("_cvFile"))?.handle || null;
-  picIndex ||= (await meta("_imgIndex"))?.items || null;
-  if (!cvIndex) { const c = await meta("_cvIndex"); if (c && cvHandle && c.name === cvHandle.name) cvIndex = c; }
-  $("picPick").hidden = !!picDir;
+  $("picConnect").hidden = true;
+  if (!FS) { $("picStatus").textContent = "Denne version af PowerPoint kan ikke åbne mapper fra tilføjelser."; return; }
+  await folderInit();
+  const granted = folderMode && (await folderAccess(false));
+  picDir = granted ? await imagesDir() : null;
+  cvHandle = granted ? await libFile(CV_PATH) : null;
+  if (!picIndex) {   // listen genbruges i 12 timer; derefter læses mappen igen, så nye billeder kommer med
+    const m = await meta("_imgIndex");
+    if (m?.root === "Billeder" && Date.now() - m.at < 12 * 3600e3) picIndex = m.items;
+  }
+  if (!cvIndex) { const c = await meta("_cvIndex"); if (c && c.name === CV_PATH[CV_PATH.length - 1]) cvIndex = c; }
   $("picRescan").hidden = !picDir;
-  if (!picDir) $("picStatus").innerHTML = "Første gang: tryk <b>Forbind til billedbanken</b> og vælg mappen <b>05 Image bank</b> (Kvadrant Consulting &gt; 60 KC Brand).";
-  else $("picStatus").textContent = picIndex ? `${picIndex.length} billeder i billedbanken` : "Billedbanken er ikke læst endnu. Tryk Opdatér.";
-  $("cvStatus").innerHTML = cvHandle ? `CV'er fra <b>${esc(cvHandle.name)}</b>${cvIndex ? ` · ${cvIndex.slides.length} slides` : ""}`
-    : "CV'er: vælg <b>Kvadrant CVs.pptx</b> (20 Sales &gt; _10 CVs, pricelist, references and proposals) én gang.";
-  $("cvPick").textContent = cvHandle ? "Skift CV-fil" : "Vælg CV-filen";
-  if (picDir && !picIndex && (await permitted(picDir, "read", false))) await scanPictures();
+  if (!folderMode) { $("picStatus").innerHTML = CONNECT_TEXT; $("picConnect").textContent = "Forbind"; $("picConnect").hidden = false; }
+  else if (!granted) { $("picStatus").textContent = "Tryk Giv adgang. Windows spørger én gang, hver gang PowerPoint er startet."; $("picConnect").textContent = "Giv adgang"; $("picConnect").hidden = false; }
+  else if (!picDir) { $("picStatus").innerHTML = (await sharedDir()) ? "Mappen <b>Billeder</b> findes ikke i SHARED FOLDER FOR PHOSPOR endnu." : CONNECT_TEXT; $("picConnect").textContent = "Forbind"; $("picConnect").hidden = !!(await sharedDir()); }
+  else $("picStatus").textContent = picIndex ? `${picIndex.length} billeder i Billeder (SHARED FOLDER FOR PHOSPOR)` : "Læser billederne …";
+  $("cvStatus").innerHTML = cvHandle ? `CV'er fra <b>Kvadrant CVs.pptx</b> (20 Sales)${cvIndex ? ` · ${cvIndex.slides.length} slides` : ""}`
+    : granted ? "CV'erne kan kun findes, når mappen <b>Kvadrant Consulting - Documents</b> er valgt (ikke kun den fælles mappe)." : "";
+  if (picDir && !picIndex) await scanPictures();
   renderPictures();
 }
-async function pickPictures() {
-  try { picDir = await window.showDirectoryPicker({ id: "kvadrant-images", mode: "read" }); }
-  catch (e) { if (e.name !== "AbortError") fail(e); return; }
-  await setMeta({ id: "_imgDir", handle: picDir });
-  picIndex = null;
-  await scanPictures();
-  await picInit();
+async function picConnect() {
+  if (await connect(true)) { picIndex = null; await picInit(); }
 }
 async function scanPictures() {
-  if (!(await permitted(picDir, "read", true))) { toast("Kvadrant fik ikke adgang til billedbanken"); return; }
-  $("picStatus").textContent = "Læser billedbanken …";
+  if (!picDir || !(await permitted(picDir, "read", true))) { toast("Kvadrant fik ikke adgang til billederne"); return; }
+  $("picStatus").textContent = "Læser billederne …";
   const items = [];
   async function walk(dir, path) {
     for await (const [name, h] of dir.entries()) {
@@ -1013,8 +1068,8 @@ async function scanPictures() {
   await walk(picDir, []);
   items.sort((a, b) => a.path.join("/").localeCompare(b.path.join("/"), "da"));
   picIndex = items;
-  await setMeta({ id: "_imgIndex", items, at: Date.now() });
-  $("picStatus").textContent = `${items.length} billeder i billedbanken`;
+  await setMeta({ id: "_imgIndex", items, at: Date.now(), root: "Billeder" });
+  $("picStatus").textContent = `${items.length} billeder i Billeder (SHARED FOLDER FOR PHOSPOR)`;
 }
 
 // Navn og titel på et CV: første linje, der ligner et navn (2-4 ord med stort), ellers "Ditlev works as …".
@@ -1026,15 +1081,6 @@ function cvPerson(text) {
   if (i >= 0) return { name: lines[i], role: lines.slice(i + 1, i + 4).find((l) => l.length < 60 && !l.includes("@") && !/^(background|baggrund)$/i.test(l) && l !== lines[i]) || "" };
   const m = /\b(\p{Lu}\p{Ll}+) (?:works|has|is|was)\b/u.exec(text);
   return { name: m ? m[1] : "", role: "" };
-}
-async function pickCv() {
-  let h;
-  try { [h] = await window.showOpenFilePicker({ id: "kvadrant-cv", types: [{ description: "PowerPoint", accept: { "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"] } }] }); }
-  catch (e) { if (e.name !== "AbortError") fail(e); return; }
-  cvHandle = h; cvIndex = null;
-  await setMeta({ id: "_cvFile", handle: h });
-  await loadCv(true);
-  await picInit();
 }
 // Kun slidernes tekst læses (ikke billederne), og resultatet huskes, til filen ændres.
 async function loadCv(ask) {
@@ -1052,7 +1098,7 @@ async function loadCv(ask) {
   }).filter((s) => s.text);
   cvIndex = { id: "_cvIndex", modified: file.lastModified, name: file.name, slides };
   await setMeta(cvIndex);
-  $("cvStatus").innerHTML = `CV'er fra <b>${esc(file.name)}</b> · ${slides.length} slides`;
+  $("cvStatus").innerHTML = `CV'er fra <b>Kvadrant CVs.pptx</b> (20 Sales) · ${slides.length} slides`;
   return cvIndex;
 }
 
@@ -1155,7 +1201,8 @@ async function insertCv(i) {
 }
 
 // ---------- Figurer ----------
-// Gemmes som <navn>.json i slidebank-mappen (_figurer), så alle kan bruge dem. Uden slidebank-mappe gemmes de kun på denne pc.
+// Hver figur er en slide med kun figuren: Slidebank > _figurer > <navn>.pptx og et billede <navn>.png ved siden af.
+// Uden forbindelse til mappen gemmes de kun på denne pc (IndexedDB).
 let snips = [], snipDelete = null;
 async function snipDir(create) {
   await folderInit();
@@ -1163,13 +1210,17 @@ async function snipDir(create) {
   return sub(await bankRoot(), "_figurer", create);
 }
 async function snipLoad() {
-  $("snipWhere").textContent = FS && (await folderInit(), folderMode) ? "Gemmes i slidebank-mappen (_figurer), så alle kan bruge dem."
-    : "Gemmes kun på denne pc. Forbind til slidebanken under Slidebank for at dele dem med de andre.";
+  $("snipWhere").textContent = FS && (await folderInit(), folderMode) ? "Gemmes i Slidebank > _figurer, så alle kan bruge dem."
+    : "Gemmes kun på denne pc. Forbind til mappen under Billeder & CV eller Slidebank for at dele dem med de andre.";
   const list = [];
   const dir = await snipDir(false).catch(() => null);
-  if (dir) for await (const [fn, fh] of dir.entries()) {
-    if (fh.kind !== "file" || !/\.json$/i.test(fn)) continue;
-    try { const j = JSON.parse(await (await fh.getFile()).text()); list.push({ name: j.name, thumb: j.thumb, items: j.items, id: "file:" + fn, file: fn }); } catch {}
+  if (dir) {
+    const all = {};
+    for await (const [fn, fh] of dir.entries()) if (fh.kind === "file") all[fn] = fh;
+    for (const fn of Object.keys(all).filter((n) => /\.pptx$/i.test(n) && !n.startsWith("~$"))) {
+      const base = fn.replace(/\.pptx$/i, ""), png = all[base + ".png"];
+      list.push({ name: base, id: "file:" + fn, file: fn, thumb: png ? URL.createObjectURL(await png.getFile()) : "" });
+    }
   }
   for (const m of (await dbGetAll()).filter((m) => m.source === "snippet")) list.push({ name: m.title, thumb: m.thumb, id: m.id, local: true });
   snips = list.sort((a, b) => a.name.localeCompare(b.name, "da"));
@@ -1204,33 +1255,43 @@ async function snipSave() {
     const rec = await idb("data", "readonly", (st) => st.get(key));
     const thumb = await cropThumb(rec);
     const dir = await snipDir(true).catch(() => null);
-    if (dir) await writeFile(dir, safeName(name) + ".json", new TextEncoder().encode(JSON.stringify({ name, items: rec.items, thumb, created: new Date().toISOString() })));
-    else {
+    if (dir) {
+      const base = safeName(name);
+      await writeFile(dir, base + ".pptx", fromB64(rec.data));
+      await writeFile(dir, base + ".png", fromB64(thumb.split(",")[1]));
+    } else {
       const id = "snip:" + crypto.randomUUID();
       await idb("meta", "readwrite", (st) => st.put({ id, source: "snippet", title: name, thumb, added: Date.now() }));
-      await idb("data", "readwrite", (st) => st.put({ id, items: rec.items }));
+      await idb("data", "readwrite", (st) => st.put({ id, data: rec.data }));
     }
     await idb("data", "readwrite", (st) => st.delete(key));
     $("snipName").value = "";
-    toast(`Gemt: ${name}${rec.skipped ? ` · ${rec.skipped} figurer (fx tabeller eller grafer) kom ikke med` : ""}`);
+    toast(`Gemt: ${name} (${rec.count} ${rec.count === 1 ? "figur" : "figurer"})`);
     await snipLoad();
   } catch (e) { fail(e); } finally { $("snipSave").disabled = false; }
 }
+// Figur-sliden sættes ind efter den slide, man står på, med figurerne markeret: Ctrl+C, gå til sin slide, Ctrl+V, og slet figur-sliden.
 async function snipInsert(id) {
   const s = snips.find((x) => x.id === id);
   if (!s) return;
-  const items = s.items || (await idb("data", "readonly", (st) => st.get(id)))?.items;
-  if (!items) throw new Error("Figuren kunne ikke hentes");
-  await idb("data", "readwrite", (st) => st.put({ id: "tmp:snippet", items }));
-  const n = await call("snippetInsert", "tmp:snippet");
-  toast(`${s.name} sat ind (${n} ${n === 1 ? "figur" : "figurer"})`);
+  let data;
+  if (s.file) { const dir = await snipDir(true); data = toB64(new Uint8Array(await (await (await dir.getFileHandle(s.file)).getFile()).arrayBuffer())); }
+  else data = (await idb("data", "readonly", (st) => st.get(id)))?.data;
+  if (!data) throw new Error("Figuren kunne ikke hentes (den er måske gemt i en ældre version)");
+  await idb("data", "readwrite", (st) => st.put({ id: "tmp:snippet", data }));
+  await call("snippetInsert", "tmp:snippet");
+  toast(`${s.name} er sat ind på en ny slide og markeret. Kopiér med Ctrl+C, og sæt ind på din slide.`);
 }
 // Slet kræver to klik på × (vinduet kan ikke vise en bekræftelse).
 async function snipRemove(id) {
   if (snipDelete !== id) { snipDelete = id; toast("Klik × igen for at slette figuren"); setTimeout(() => { if (snipDelete === id) snipDelete = null; }, 4000); return; }
   snipDelete = null;
   const s = snips.find((x) => x.id === id);
-  if (s?.file) { const dir = await snipDir(true); await dir.removeEntry(s.file); }
+  if (s?.file) {
+    const dir = await snipDir(true);
+    await dir.removeEntry(s.file);
+    await dir.removeEntry(s.file.replace(/\.pptx$/i, ".png")).catch(() => {});
+  }
   else { await idb("meta", "readwrite", (st) => st.delete(id)); await idb("data", "readwrite", (st) => st.delete(id)); }
   toast("Figuren er slettet");
   await snipLoad();
@@ -1247,7 +1308,7 @@ function rvShowMode() {
   $("rvCheck").hidden = rvMode !== "check";
   $("rvEyebrow").hidden = rvMode !== "eyebrow";
   $("rvScope").closest(".field").hidden = rvMode === "check" || rvMode === "eyebrow";
-  $("rvRun").textContent = rvMode === "text" ? "Find" : "Find det, der skal rettes";
+  $("rvRun").innerHTML = "Søg <kbd>Enter</kbd>";
 }
 async function rvRun() {
   $("rvRun").disabled = true;
@@ -1259,6 +1320,7 @@ async function rvRun() {
       : rvMode === "check" ? await call("checkItems")
       : await call("eyebrowItems", { names: $("rvNames").checked });
     rv = { items, i: 0, done: new Set(), history: [] };
+    for (const k of Object.keys(rvImgs)) delete rvImgs[k];
     if (!items.length) { $("rvPanel").hidden = true; toast(rvMode === "text" ? "Fandt ikke noget" : rvMode === "eyebrow" ? "Alle eyebrow-numre passer til sektionerne" : "Intet at rette"); return; }
     $("rvPanel").hidden = false;
     document.activeElement?.blur?.();   // så Enter retter og Ctrl+Z fortryder, i stedet for at søge igen
@@ -1281,10 +1343,25 @@ function rvRender() {
     <span class="no">Slide ${x.slide}</span><span>${esc(x.before)} → ${esc(x.after || "(slet)")}</span></button>`).join("");
   $("rvList").querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest" });
 }
+// Billedet af sliden huskes, til der rettes på den; den gule ramme viser figuren med fundet.
+const rvImgs = {};
+async function rvShow(i) {
+  const it = rv.items[i], cached = rvImgs[it.slideId];
+  const r = await call("reviewGo", it, !cached).catch(() => null);
+  if (!r || rv.i !== i) return;
+  if (r.img) rvImgs[it.slideId] = r.img;
+  const img = r.img || cached;
+  if (img) $("rvImg").src = "data:image/png;base64," + img;
+  $("rvSlide").style.aspectRatio = `${r.w} / ${r.h}`;
+  const b = r.box, pad = 0.6;
+  $("rvBox").hidden = !b;
+  if (b) Object.assign($("rvBox").style, { left: `calc(${(b.left / r.w) * 100}% - ${pad}%)`, top: `calc(${(b.top / r.h) * 100}% - ${pad * 1.6}%)`,
+    width: `calc(${(b.width / r.w) * 100}% + ${2 * pad}%)`, height: `calc(${(b.height / r.h) * 100}% + ${3.2 * pad}%)` });
+}
 function rvGo(i) {
   rv.i = (i + rv.items.length) % rv.items.length;
   rvRender();
-  call("reviewGo", rv.items[rv.i]).catch(() => {});
+  rvShow(rv.i);
 }
 function rvNextOpen() {
   const n = rv.items.length;
@@ -1302,6 +1379,7 @@ async function rvApply(next = true) {
   const i = rv.i, it = rv.items[i];
   if (rv.done.has(i)) { if (next) rvNextOpen(); return; }
   const undo = await call("reviewApply", it);
+  delete rvImgs[it.slideId];
   if (it.kind === "text") { rvShift(it.slideId, it.shapeId, undo.start, it.after.length - it.before.length); it.start = undo.start; }
   rv.done.add(i);
   rv.history.push({ i, undo });
@@ -1324,6 +1402,7 @@ async function rvUndo() {
   try {
     const redo = await call("reviewApply", h.undo);
     const it = rv.items[h.i];
+    delete rvImgs[it.slideId];
     if (it.kind === "text") { rvShift(it.slideId, it.shapeId, redo.start, h.undo.after.length - h.undo.before.length); it.start = redo.start; }
     rv.done.delete(h.i);
     rvGo(h.i);
@@ -1333,23 +1412,39 @@ async function rvUndo() {
 
 // ---------- Masters & filstørrelse ----------
 const MB = (b) => (b / 1e6).toLocaleString("da-DK", { maximumFractionDigits: 1 }) + " MB";
-const FAMILY = { elixirr: "Elixirr", kvNew: "Kvadrant · ny CVI", kvOld: "Kvadrant · gammel CVI", other: "Andet" };
+// Alle masters med afkrydsning: ubrugte er markeret på forhånd. Slides på markerede masters flyttes til Elixirr i kopien.
+let msList = [];
+const slideNos = (nos) => nos.length > 6 ? `${nos.slice(0, 6).join(", ")} …` : nos.join(", ");
 async function msRun() {
   $("msRun").disabled = true;
   $("msResult").innerHTML = '<div class="hint">Læser masters …</div>';
   try {
-    const r = await call("mastersReport"), target = $("msTarget").value, label = FAMILY[target];
-    const wrong = r.slides.filter((s) => s.family !== target);
-    $("msResult").innerHTML = `<table class="ms"><tr><th>Master (tema)</th><th>CVI</th><th class="n">Layouts</th><th class="n">Slides</th></tr>${r.masters.map((m) =>
-      `<tr><td>${esc(m.name || "(uden navn)")}</td><td>${esc(m.familyName)}</td><td class="n">${m.layouts}</td><td class="n">${m.slides || '<span class="tag old">ubrugt</span>'}</td></tr>`).join("")}</table>`
-      + (r.masters.some((m) => m.family === target) ? "" : `<div class="hint">Præsentationen har ingen ${esc(label)}-master. Start fra templatet i 60 KC Brand &gt; 04 Templates, og sæt slides ind med "Brug destinationstema".</div>`)
-      + (wrong.length
-        ? `<div class="issue-head"><b>Slides uden ${esc(label)}-masteren<span class="badge">${wrong.length}</span></b></div>
-           <div style="display:grid;gap:6px">${wrong.slice(0, 80).map((s) => `<div class="issue"><span>Slide ${s.slide} · ${esc(FAMILY[s.family])}</span><button data-ms="${s.slideId}">Gå til</button></div>`).join("")}</div>
-           ${wrong.length > 80 ? `<div class="hint">… og ${wrong.length - 80} mere</div>` : ""}
-           <div class="hint">Skift layoutet via Hjem &gt; Layout og vælg et ${esc(label)}-layout. Bagefter kan de gamle masters fjernes nedenfor.</div>`
-        : `<div class="ok-card"><span class="dot">✓</span><div><b>Alle ${r.slides.length} slides bruger ${esc(label)}-masteren.</b></div></div>`);
+    msList = (await call("mastersReport")).masters;
+    const elixirr = msList.some((m) => m.family === "elixirr");
+    $("msResult").innerHTML = `<table class="ms"><tr><th>Fjern</th><th>Master</th><th>CVI</th><th class="n">Layouts</th><th>Slides</th></tr>${msList.map((m, i) =>
+      `<tr><td><input type="checkbox" data-msx="${i}"${m.slides ? "" : " checked"}></td><td>${esc(m.name || "(uden navn)")}</td><td>${esc(m.familyName)}</td><td class="n">${m.layouts}</td>
+        <td>${m.slides ? `${m.slides} (slide ${slideNos(m.slideNos)}) <button class="ghost" style="height:24px;padding:0 8px" data-ms="${m.slideIds[0]}">Gå til</button>` : '<span class="tag old">ubrugt</span>'}</td></tr>`).join("")}</table>
+      <div class="row"><button class="ghost" id="msNonElixirr">Markér alle, der ikke er Elixirr</button><span class="spacer"></span><button class="primary" id="msClean">Lav kopi uden de markerede</button></div>
+      <div class="hint" id="msHint">Slides på en master, der fjernes, flyttes til et Elixirr-layout af samme slags: forside → Core / Cover, breaker → Core / Divider, agenda → Core / Agenda, slut → Core / End, tom → Block / Blank, resten → Text / 1. Indholdet bliver, hvor det er; masterens logo, baggrund, farver og skrift skifter til Elixirr. ${elixirr ? "" : "Præsentationen har ingen Elixirr-master, så den hentes fra Elixirr-templatet i 60 KC Brand &gt; 04 Templates."} Kvadrant-logoer, der er sat direkte på en slide, bliver stående.</div>`;
   } catch (e) { $("msResult").innerHTML = ""; fail(e); } finally { $("msRun").disabled = false; }
+}
+async function msClean() {
+  const remove = msList.filter((_, i) => document.querySelector(`[data-msx="${i}"]`)?.checked);
+  if (!remove.length) { toast("Markér de masters, der skal fjernes"); return; }
+  const moving = remove.filter((m) => m.slides);
+  const keepsElixirr = msList.some((m) => m.family === "elixirr" && !remove.includes(m));
+  let template = null;
+  if (moving.length && !keepsElixirr) {
+    if (!(await connect(true))) return;
+    const h = await libFile(TEMPLATE_PATH);
+    if (!h) throw new Error("Elixirr-templatet blev ikke fundet i 60 KC Brand > 04 Templates > 01_PowerPoint");
+    toast("Henter Elixirr-templatet …");
+    const data = new Uint8Array(await (await h.getFile()).arrayBuffer());
+    await idb("data", "readwrite", (st) => st.put({ id: "tmp:template", data }));
+    template = "tmp:template";
+  }
+  const r = await call("elixirrCopy", { remove: remove.map((m) => m.path), template });
+  toast(`Kopi åbnet: ${r.removed} masters fjernet${r.moved.length ? `, ${r.moved.length} slides flyttet til Elixirr` : ""}. Gem den under et nyt navn.`);
 }
 async function withProgress(btn, fn) {
   $(btn).disabled = true;
@@ -1469,9 +1564,8 @@ $("checkResult").addEventListener("click", (e) => {
 });
 
 // Billeder & CV
-$("picPick").addEventListener("click", pickPictures);
+$("picConnect").addEventListener("click", () => picConnect().catch(fail));
 $("picRescan").addEventListener("click", () => scanPictures().then(renderPictures, fail));
-$("cvPick").addEventListener("click", pickCv);
 $("picSearch").addEventListener("input", () => { clearTimeout(picTimer); picTimer = setTimeout(() => renderPictures().catch(fail), 150); });
 $("picCats").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { picCat = b.dataset.cat; renderPictures().catch(fail); } });
 $("picList").addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (b) insertPic(picShown[+b.dataset.i]).catch(fail); });
@@ -1506,11 +1600,12 @@ rvShowMode();
 
 // Masters & filstørrelse
 $("msRun").addEventListener("click", msRun);
-$("msResult").addEventListener("click", (e) => { const b = e.target.closest("[data-ms]"); if (b) call("goTo", { slideId: b.dataset.ms }).catch(fail); });
-$("msClean").addEventListener("click", () => withProgress("msClean", async () => {
-  const r = await call("masterCleanCopy", { layouts: $("msLayouts").checked });
-  toast(r.masters || r.layouts ? `Kopi åbnet: ${r.masters} masters${r.layouts ? ` og ${r.layouts} layouts` : ""} fjernet. Gem den under et nyt navn.` : "Der er ingen ubrugte masters at fjerne");
-}));
+$("msResult").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ms]");
+  if (b) call("goTo", { slideId: b.dataset.ms }).catch(fail);
+  if (e.target.closest("#msNonElixirr")) msList.forEach((m, i) => { const c = document.querySelector(`[data-msx="${i}"]`); if (c) c.checked = m.family !== "elixirr"; });
+  if (e.target.closest("#msClean")) withProgress("msClean", msClean);
+});
 $("szRun").addEventListener("click", () => withProgress("szRun", async () => {
   const r = await call("sizeReport", { dpi: 150 });
   $("szResult").innerHTML = `Filen fylder <b>${MB(r.file)}</b>, heraf billeder ${MB(r.media)}. `
@@ -1538,6 +1633,7 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (typing || !rv || $("rvPanel").hidden)) { e.preventDefault(); rvRun(); return; }
     if (e.key === "Enter" && !e.target.matches("button, select")) { e.preventDefault(); rvApply().catch(fail); return; }
     if (e.key === "F3" && rv) { e.preventDefault(); rvGo(rv.i + (e.shiftKey ? -1 : 1)); return; }
+    if (rv && !typing && !$("rvPanel").hidden && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); if (e.key === "ArrowRight") rvNextOpen(); else rvGo(rv.i - 1); return; }
   }
   if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); close(); return; }   // Ctrl+Shift+K igen lukker
   if (current === "keys" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.target.matches("input")) {
