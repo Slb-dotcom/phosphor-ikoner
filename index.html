@@ -340,7 +340,13 @@ function translate(word) {
 // Kvadrant-ordbog (ordbog.json): ord -> håndplukkede ikoner. Har forrang for DANISH og Phosphors egne tags,
 // så fx "marked" giver geografi, ikke grøntsager.
 let ORDBOG = {}, ORDBOG_KEYS = [];
-const stems = (word) => [word, ...ENDINGS.filter((e) => word.endsWith(e) && word.length - e.length >= 2).map((e) => word.slice(0, -e.length))];
+// Engelske bøjninger: planning/planned -> plan, pricing -> price, opportunities -> opportunity.
+function englishStems(word) {
+  const m = word.match(/^(.{3,}?)(ing|ed)$/);
+  if (m) { const b = m[1]; return [b, b + "e", ...(/(.)\1$/.test(b) ? [b.slice(0, -1)] : [])]; }
+  return word.length > 4 && word.endsWith("ies") ? [word.slice(0, -3) + "y"] : [];
+}
+const stems = (word) => [word, ...ENDINGS.filter((e) => word.endsWith(e) && word.length - e.length >= 2).map((e) => word.slice(0, -e.length)), ...englishStems(word)];
 function curated(word) {
   const forms = stems(word);
   for (const f of forms) if (ORDBOG[f]) return ORDBOG[f];
