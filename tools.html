@@ -148,7 +148,8 @@
   .pic .t small { display: block; color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
   .pic .x { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(38,33,57,.8); color: #fff; font-size: 13px; line-height: 22px; text-align: center; display: none; }
   .pic:hover .x { display: block; }
-  .cv-list { display: grid; gap: 6px; }
+  .cv-pic .im { display: grid; place-items: center; font-size: 11px; color: var(--muted); }
+  .cv-pic .t b { color: var(--ink); }
   .cv { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
   .cv .who { flex: 1; min-width: 0; }
   .cv .who b { color: var(--ink); }
@@ -161,6 +162,7 @@
   .rv-item .where { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
   .rv-item del { background: #F6D5DB; color: #6B1F2E; text-decoration: line-through; padding: 0 2px; border-radius: 3px; }
   .rv-item ins { background: var(--yellow-soft); color: var(--ink); text-decoration: none; font-weight: 600; padding: 0 2px; border-radius: 3px; }
+  .rv-opts { display: grid; gap: 8px; padding-top: 2px; }
   .rv-view { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
   .rv-slide { position: relative; aspect-ratio: 16 / 9; background: var(--soft); border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
   .rv-slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -293,7 +295,7 @@
       <div class="chips small" id="picCats"></div>
       <div class="hint">Billeder skaleres til højst 150 dpi ved fuld slidebredde, før de sættes ind, så filen ikke vokser. Er én figur markeret, lægges billedet inden i den.</div>
     </div>
-    <div id="cvBlock" hidden><div class="row" style="margin-bottom:6px"><span class="label">CV'er</span><span class="spacer"></span><label class="check"><input type="checkbox" id="cvTheme"> Brug denne præsentations design</label></div><div class="cv-list" id="cvList"></div></div>
+    <div id="cvBlock" hidden><div class="row" style="margin-bottom:6px"><span class="label">CV'er</span><span class="spacer"></span><label class="check"><input type="checkbox" id="cvTheme"> Brug denne præsentations design</label></div><div class="pic-grid" id="cvList" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))"></div></div>
     <div><div class="label" id="picHead" style="margin-bottom:6px"></div><div class="pic-grid" id="picList"></div></div>
   </section>
 
@@ -313,25 +315,37 @@
   </section>
 
   <section id="replace">
-    <div><h1>Søg & ret</h1><p class="lead">Find det, der skal rettes, og gå det igennem ét ad gangen som i Søg og erstat. Enter retter og går videre, og Ctrl+Z fortryder den seneste rettelse.</p></div>
+    <div><h1>Søg & ret</h1><p class="lead">Vælg, hvad der skal findes, og tryk Søg. Gå fundene igennem ét ad gangen: Ret (Enter) eller Fortsæt (→). Ctrl+Z fortryder.</p></div>
     <div class="card">
       <div class="chips small" id="rvModes">
         <button class="chip" data-mode="text" aria-pressed="true">Søg og erstat</button>
-        <button class="chip" data-mode="numbers">Talformat (mDKK / mUSD)</button>
-        <button class="chip" data-mode="check">Figurer og skrift (Kvadrant-tjek)</button>
+        <button class="chip" data-mode="numbers">Tal</button>
+        <button class="chip" data-mode="font">Skrift</button>
+        <button class="chip" data-mode="size">Størrelse</button>
+        <button class="chip" data-mode="color">Farve</button>
+        <button class="chip" data-mode="layout">Placering & COMMENTARY</button>
         <button class="chip" data-mode="eyebrow">Eyebrow-numre</button>
       </div>
-      <div id="rvText" style="display:grid;gap:8px">
-        <div class="row"><input class="wide" id="rvFind" type="text" placeholder="Find, fx 2024 eller kunden" autocomplete="off" spellcheck="false"><input class="wide" id="rvRepl" type="text" placeholder="Erstat med" autocomplete="off" spellcheck="false"></div>
+      <div class="rv-opts" id="rvText">
+        <div class="row"><input class="wide" id="rvFind" type="text" placeholder="Find, fx 2024" autocomplete="off" spellcheck="false"><input class="wide" id="rvRepl" type="text" placeholder="Erstat med" autocomplete="off" spellcheck="false"></div>
         <div class="row"><label class="check"><input type="checkbox" id="rvCase"> Forskel på store og små bogstaver</label><label class="check"><input type="checkbox" id="rvWhole"> Kun hele ord</label></div>
       </div>
-      <div id="rvNumbers" class="hint" hidden>Finder beløb med valuta, der ikke står i Kvadrant-form (fx 12.500.000 kr. → 12,5 mDKK). Sprog og decimaler følger indstillingerne under Talformat.</div>
-      <div id="rvCheck" class="hint" hidden>Går Kvadrant-tjekkets fund igennem ét ad gangen: skrift uden for temaet, farver uden for paletten, overskrifter der ikke er 25 pt, tekst i bokse der ikke er 10 pt, COMMENTARY, topjustering og figurer uden for sliden.</div>
-      <div id="rvEyebrow" hidden style="display:grid;gap:8px">
-        <div class="hint">Nummeret i eyebrow'en (den lille tekst over overskriften, fx "02 | Marked") og på afsnits-slides følger præsentationens sektioner. Kun sektioner med numre tæller med, så en forside eller et appendix ikke rykker tallene. Kræver, at præsentationen er delt op i sektioner (højreklik mellem to slides i oversigten &gt; Tilføj sektion).</div>
+      <div class="rv-opts" id="rvNumbers" hidden>
+        <div class="row">
+          <label class="field">Sprog <select id="rvLang"><option value="da">Dansk · 1,2 mDKK</option><option value="en">Engelsk · 1.2 mUSD</option></select></label>
+          <label class="field">Enhed <select id="rvUnit"><option value="auto">Automatisk</option><option value="1000">Tusinder</option><option value="1000000">Millioner</option><option value="1000000000">Milliarder</option><option value="none">Ingen</option></select></label>
+          <label class="field">Decimaler <select id="rvDec"><option>0</option><option selected>1</option><option>2</option></select></label>
+          <label class="field">Valuta <select id="rvCur"><option value="auto" selected>Kvadrant (DKK / USD)</option><option value="keep">Behold</option><option value="kr.">kr.</option><option value="DKK">DKK</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="">Ingen</option></select></label>
+        </div>
+        <div class="row"><label class="check"><input type="checkbox" id="rvAddCur"> Sæt også valuta på tal uden valuta</label><label class="check"><input type="checkbox" id="rvOnlyMoney"> Kun beløb med valuta</label></div>
+        <div class="hint">Alle tal fra 1.000 findes, med og uden valuta (årstal springes over). Fx <b id="rvEx1"></b> og <b id="rvEx2"></b>.</div>
+      </div>
+      <div class="rv-opts hint" id="rvCheckHint" hidden></div>
+      <div class="rv-opts" id="rvEyebrow" hidden>
+        <div class="hint">Nummeret i eyebrow'en (den lille tekst over overskriften, fx "02 | Marked") og på afsnits-slides følger præsentationens sektioner. Kun sektioner med numre tæller med. Kræver sektioner (højreklik mellem to slides i oversigten &gt; Tilføj sektion).</div>
         <label class="check"><input type="checkbox" id="rvNames" checked> Ret også sektionsnavnet, når eyebrow'en viser et andet afsnits navn</label>
       </div>
-      <div class="row"><label class="field">Hvor <select id="rvScope"><option value="deck">Hele præsentationen</option><option value="slide">Markerede slides</option></select></label><span class="spacer"></span><button class="primary" id="rvRun">Find</button></div>
+      <div class="row"><label class="field" id="rvScopeField">Hvor <select id="rvScope"><option value="deck">Hele præsentationen</option><option value="slide">Markerede slides</option></select></label><span class="spacer"></span><button class="primary" id="rvRun">Søg</button></div>
     </div>
     <div class="card" id="rvPanel" hidden>
       <div class="row"><b id="rvPos"></b><span class="spacer"></span><button class="ghost" id="rvPrev">← Forrige</button><button class="ghost" id="rvNext">Næste</button></div>
@@ -341,13 +355,12 @@
           <div class="rv-item" id="rvItem"></div>
           <div class="row"><button class="primary" id="rvApply">Ret <kbd>Enter</kbd></button><button class="ghost" id="rvSkip">Fortsæt <kbd style="font:600 10.5px Inter">→</kbd></button></div>
           <div class="row"><button class="ghost" id="rvAll"></button><button class="ghost" id="rvUndo">Fortryd <kbd style="font:600 10.5px Inter">Ctrl+Z</kbd></button></div>
-          <div class="hint">PowerPoint går også til sliden og markerer stedet.</div>
         </div>
       </div>
-      <div class="rv-list" id="rvList"></div>
+      <div><button class="ghost" id="rvListToggle" style="height:28px;font-size:11.5px">Vis alle fund</button></div>
+      <div class="rv-list" id="rvList" hidden></div>
     </div>
   </section>
-
   <section id="masters">
     <div><h1>Masters & filstørrelse</h1><p class="lead">Se alle masters i præsentationen, og vælg dem, der skal væk. Slides på en master, der fjernes, flyttes til Elixirr. Det laves altid i en kopi, så originalen ikke røres.</p></div>
     <div class="card">
@@ -1019,16 +1032,42 @@ async function fileAt(root, path) {
 }
 
 // Billederne ligger i SHARED FOLDER FOR PHOSPOR > Billeder (en kopi af billedbanken); er de lagt i en undermappe
-// (fx "05 Image bank"), gås der ned i den.
+// (fx "05 Image bank"), gås der ned i den. Mapper, der starter med "_" (fx _cv), og tomme mapper tæller ikke med.
+const billederDir = async () => sub(await sharedDir(), "Billeder");
 async function imagesDir() {
-  let d = await sub(await sharedDir(), "Billeder");
+  let d = await billederDir();
   for (let k = 0; d && k < 2; k++) {
-    const kids = [];
-    for await (const [n, h] of d.entries()) kids.push([n, h]);
-    const dirs = kids.filter(([, h]) => h.kind === "directory"), imgs = kids.filter(([n, h]) => h.kind === "file" && IMG_EXT.test(n));
-    if (dirs.length === 1 && !imgs.length) d = dirs[0][1]; else break;
+    const dirs = [];
+    let imgs = 0;
+    for await (const [n, h] of d.entries()) {
+      if (h.kind === "file") { if (IMG_EXT.test(n)) imgs++; continue; }
+      if (n.startsWith("_")) continue;
+      for await (const _ of h.keys()) { dirs.push(h); break; }   // kun mapper med noget i
+    }
+    if (dirs.length === 1 && !imgs) d = dirs[0]; else break;
   }
   return d;
+}
+// Portrætter vises kun for personerne i Billeder > _personer.txt (én pr. linje). Navnet læses af undermappen
+// ("Aniket Pagdhare") eller filnavnet ("Søren 2 - blå.jpg", "Brian_CV foto_rund.png"); ord som "blå", "CV" og "portræt"
+// ignoreres. Fornavnet skal passe (en tastefejl tilladt), og evt. efternavne eller forbogstaver skal høre til samme person.
+const squash = (s) => norm(s).replace(/oe/g, "o").replace(/ph/g, "f").replace(/(.)\1+/g, "$1");
+const NAME_STOP = new Set(["cv", "foto", "fotos", "rund", "bla", "gra", "fri", "fir", "square", "billede", "kvadrant", "portraet", "portrat", "portrait", "x"]);
+const nameToks = (s) => squash(s.replace(/\.[^.]+$/, "").replace(/\bv\d+\b/gi, " ").replace(/[_\d()]+/g, " ")).split(/[^a-z-]+/).filter((t) => t && t !== "-" && !NAME_STOP.has(t));
+// Højst ét forkert bogstav ("Charlottw"), kun for navne på 5+ bogstaver og samme længde, så Filip ikke bliver til Filippa.
+const near = (a, b) => a === b || (a.length >= 5 && a.length === b.length && [...a].filter((c, i) => c !== b[i]).length <= 1);
+async function readPeople() {
+  try {
+    const f = await (await (await billederDir()).getFileHandle("_personer.txt")).getFile();
+    return (await f.text()).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  } catch { return null; }
+}
+function personFilter(people) {
+  if (!people?.length) return () => true;
+  const list = people.map((p) => squash(p).split(/\s+/));
+  const ok = (toks) => toks.length > 0 && list.some((p) => near(p[0], toks[0])
+    && toks.slice(1).every((t) => p.includes(t) || (t.length === 1 && p.slice(1).some((n) => n[0] === t))));
+  return (path) => !/portrait/i.test(path[0]) || path.slice(1).some((seg) => ok(nameToks(seg)));
 }
 async function picInit() {
   $("picConnect").hidden = true;
@@ -1037,9 +1076,9 @@ async function picInit() {
   const granted = folderMode && (await folderAccess(false));
   picDir = granted ? await imagesDir() : null;
   cvHandle = granted ? await libFile(CV_PATH) : null;
-  if (!picIndex) {   // listen genbruges i 12 timer; derefter læses mappen igen, så nye billeder kommer med
-    const m = await meta("_imgIndex");
-    if (m?.root === "Billeder" && Date.now() - m.at < 12 * 3600e3) picIndex = m.items;
+  if (!picIndex && picDir) {   // listen genbruges i 12 timer (og til personlisten ændres); derefter læses mappen igen
+    const m = await meta("_imgIndex"), people = ((await readPeople()) || []).join("|");
+    if (m?.root === "Billeder" && m.people === people && Date.now() - m.at < 12 * 3600e3) picIndex = m.items;
   }
   if (!cvIndex) { const c = await meta("_cvIndex"); if (c && c.name === CV_PATH[CV_PATH.length - 1]) cvIndex = c; }
   $("picRescan").hidden = !picDir;
@@ -1058,17 +1097,17 @@ async function picConnect() {
 async function scanPictures() {
   if (!picDir || !(await permitted(picDir, "read", true))) { toast("Kvadrant fik ikke adgang til billederne"); return; }
   $("picStatus").textContent = "Læser billederne …";
-  const items = [];
+  const items = [], people = await readPeople(), allowed = personFilter(people);
   async function walk(dir, path) {
     for await (const [name, h] of dir.entries()) {
-      if (h.kind === "directory") { if (!IMG_SKIP_DIR.test(name)) await walk(h, [...path, name]); }
-      else if (IMG_EXT.test(name) && !/^[~.]/.test(name)) items.push({ path: [...path, name], cat: path[0] || "", search: norm([...path, name].join(" ")) });
+      if (h.kind === "directory") { if (!IMG_SKIP_DIR.test(name) && !name.startsWith("_")) await walk(h, [...path, name]); }
+      else if (IMG_EXT.test(name) && !/^[~.]/.test(name) && allowed([...path, name])) items.push({ path: [...path, name], cat: path[0] || "", search: norm([...path, name].join(" ")) });
     }
   }
   await walk(picDir, []);
   items.sort((a, b) => a.path.join("/").localeCompare(b.path.join("/"), "da"));
   picIndex = items;
-  await setMeta({ id: "_imgIndex", items, at: Date.now(), root: "Billeder" });
+  await setMeta({ id: "_imgIndex", items, at: Date.now(), root: "Billeder", people: (people || []).join("|") });
   $("picStatus").textContent = `${items.length} billeder i Billeder (SHARED FOLDER FOR PHOSPOR)`;
 }
 
@@ -1086,7 +1125,7 @@ function cvPerson(text) {
 async function loadCv(ask) {
   if (!cvHandle || !(await permitted(cvHandle, "read", ask))) return null;
   const file = await cvHandle.getFile();
-  if (cvIndex?.modified === file.lastModified && cvIndex.name === file.name) return cvIndex;
+  if (cvIndex?.modified === file.lastModified && cvIndex.name === file.name && cvIndex.v === 2) return cvIndex;
   $("cvStatus").textContent = "Læser CV-filen …";
   await loadFflate();
   const files = fflate.unzipSync(new Uint8Array(await file.arrayBuffer()),
@@ -1094,15 +1133,16 @@ async function loadCv(ask) {
   const secs = KvPptx.sections(files);
   const slides = KvPptx.slideList(files).map((s) => {
     const text = KvPptx.slideText(files, s.path);
-    return { index: s.index, ...cvPerson(text), sec: secs.find((x) => x.slides.includes(s.index))?.name || "", text: norm(text) };
+    return { index: s.index, slideId: s.id, ...cvPerson(text), sec: secs.find((x) => x.slides.includes(s.index))?.name || "", text: norm(text) };
   }).filter((s) => s.text);
-  cvIndex = { id: "_cvIndex", modified: file.lastModified, name: file.name, slides };
+  cvIndex = { id: "_cvIndex", v: 2, modified: file.lastModified, name: file.name, slides };
   await setMeta(cvIndex);
   $("cvStatus").innerHTML = `CV'er fra <b>Kvadrant CVs.pptx</b> (20 Sales) · ${slides.length} slides`;
   return cvIndex;
 }
 
 let picTimer, picObserver;
+const cvThumbs = {};
 async function renderPictures() {
   const toks = norm($("picSearch").value.trim()).split(/\s+/).filter(Boolean);
   const cats = [...new Set((picIndex || []).map((it) => it.cat))];
@@ -1115,8 +1155,18 @@ async function renderPictures() {
       .sort((a, b) => (toks.every((t) => norm(b.name).includes(t)) - toks.every((t) => norm(a.name).includes(t))) || a.index - b.index).slice(0, 12);
   }
   $("cvBlock").hidden = !cvHits.length;
-  $("cvList").innerHTML = cvHits.map((s) => `<div class="cv"><div class="who"><b>${esc(s.name || "CV")}</b>${s.sec ? `<span class="tag${/former|old/i.test(s.sec) ? " old" : ""}">${esc(s.sec)}</span>` : ""}
-    <div>${esc(s.role)}${s.role ? " · " : ""}slide ${s.index + 1}</div></div><button class="ghost" data-cv="${s.index}">Indsæt CV</button></div>`).join("");
+  // Hver CV-slide vises som billede (fra Billeder > _cv, lavet af cv-miniaturer.ps1), så man kan vælge den med den rigtige erfaring.
+  $("cvList").innerHTML = cvHits.map((s) => `<button class="pic wide-im cv-pic" data-cv="${s.index}" title="Sæt CV'et ind efter den slide, du står på">
+    <div class="im" data-cvthumb="${esc(s.slideId || "")}"></div>
+    <div class="t"><b>${esc(s.name || "CV")}</b>${s.sec ? `<span class="tag${/former|old/i.test(s.sec) ? " old" : ""}">${esc(s.sec)}</span>` : ""}<small>${esc(s.role)}${s.role ? " · " : ""}slide ${s.index + 1}</small></div></button>`).join("");
+  const cvDir = cvHits.length ? await sub(await billederDir(), "_cv") : null;
+  for (const el of document.querySelectorAll("#cvList [data-cvthumb]")) {
+    const id = el.dataset.cvthumb;
+    if (!cvDir || !id) continue;
+    cvThumbs[id] ||= await cvDir.getFileHandle(id + ".png").then((h) => h.getFile()).then((f) => URL.createObjectURL(f)).catch(() => "");
+    if (cvThumbs[id]) el.style.backgroundImage = `url(${cvThumbs[id]})`;
+    else el.textContent = "Intet billede endnu";
+  }
   const hits = (picIndex || []).filter((it) => (picCat === "all" || it.cat === picCat) && toks.every((t) => it.search.includes(t)));
   picShown = hits.slice(0, 150);
   $("picHead").textContent = !picIndex ? "" : hits.length ? `${hits.length} billeder${hits.length > picShown.length ? ` · viser de første ${picShown.length}, søg for at indsnævre` : ""}` : "Ingen billeder matcher";
@@ -1301,14 +1351,41 @@ async function snipRemove(id) {
 // Forslagene kommer fra runtime; her gås de igennem ét ad gangen. Hver rettelse giver et modsat forslag tilbage (fortryd).
 // Retter man i et felt, flyttes de senere forslag i samme felt tilsvarende.
 let rvMode = "text", rv = null;
+// Kvadrant-tjekkets fund, delt op: skrift, størrelse, farve og placering/COMMENTARY hver for sig.
+const RV_CHECK = {
+  font: { kinds: ["font"], hint: "Tekst i en skrift, der ikke er temaets, sættes til temaets skrift (overskrift eller brødtekst)." },
+  size: { kinds: ["title", "body"], hint: "Overskrifter, der ikke er 25 pt, og tekst i bokse, der ikke er 10 pt." },
+  color: { kinds: ["color"], hint: "Tekst- og fyldfarver uden for temaets palet sættes til den nærmeste temafarve." },
+  layout: { kinds: ["commentary", "align", "off"], hint: "COMMENTARY uden versaler, tekst i bokse, der ikke er topjusteret, og figurer uden for sliden." },
+};
+function rvNfOpts() {
+  return { lang: $("rvLang").value, unit: $("rvUnit").value, decimals: +$("rvDec").value, currency: $("rvCur").value,
+    addCurrency: $("rvAddCur").checked, onlyMoney: $("rvOnlyMoney").checked };
+}
+// Eksemplerne viser, hvad 125000 og 125000 DKK bliver med de valgte indstillinger (samme regler som i runtime).
+function rvExample() {
+  const o = rvNfOpts(), units = o.lang === "da" ? [[1e9, "mia."], [1e6, "mio."], [1e3, "t."]] : [[1e9, "bn"], [1e6, "m"], [1e3, "k"]];
+  const fmt = (v, cur) => {
+    const [d, w] = o.unit === "auto" ? units.find(([x]) => v >= x) || [1, ""] : o.unit === "none" ? [1, ""] : units.find(([x]) => x === +o.unit);
+    const n = (v / d).toLocaleString(o.lang === "da" ? "da-DK" : "en-US", { minimumFractionDigits: o.decimals, maximumFractionDigits: o.decimals });
+    const prefix = { da: { 1e3: "t", 1e6: "m", 1e9: "mia. " }, en: { 1e3: "k", 1e6: "m", 1e9: "bn" } }[o.lang][d] || "";
+    return /^[A-Z]{3}$/.test(cur) ? `${n} ${prefix}${cur}` : o.lang === "da" ? [n, w, cur].filter(Boolean).join(" ") : `${cur ? cur + " " : ""}${n}${w}`;
+  };
+  const curFor = (has) => (!has && !o.addCurrency ? "" : o.currency === "auto" ? (has || (o.lang === "da" ? "DKK" : "USD")) : o.currency === "keep" ? has : o.currency);
+  $("rvEx1").textContent = o.onlyMoney ? "125000 lades være" : `125000 → ${fmt(125000, curFor(""))}`;
+  $("rvEx2").textContent = `125000 DKK → ${fmt(125000, curFor("DKK"))}`;
+}
 function rvShowMode() {
   document.querySelectorAll("#rvModes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === rvMode));
+  const check = RV_CHECK[rvMode];
   $("rvText").hidden = rvMode !== "text";
   $("rvNumbers").hidden = rvMode !== "numbers";
-  $("rvCheck").hidden = rvMode !== "check";
+  $("rvCheckHint").hidden = !check;
+  if (check) $("rvCheckHint").textContent = check.hint;
   $("rvEyebrow").hidden = rvMode !== "eyebrow";
-  $("rvScope").closest(".field").hidden = rvMode === "check" || rvMode === "eyebrow";
+  $("rvScopeField").hidden = !!check || rvMode === "eyebrow";
   $("rvRun").innerHTML = "Søg <kbd>Enter</kbd>";
+  if (rvMode === "numbers") rvExample();
 }
 async function rvRun() {
   $("rvRun").disabled = true;
@@ -1316,8 +1393,8 @@ async function rvRun() {
   try {
     const scope = $("rvScope").value;
     const items = rvMode === "text" ? await call("findText", { q: $("rvFind").value, repl: $("rvRepl").value, matchCase: $("rvCase").checked, whole: $("rvWhole").checked, scope })
-      : rvMode === "numbers" ? await call("numberItems", { ...nfOpts(), scope })
-      : rvMode === "check" ? await call("checkItems")
+      : rvMode === "numbers" ? await call("numberItems", { ...rvNfOpts(), scope })
+      : RV_CHECK[rvMode] ? await call("checkItems", RV_CHECK[rvMode].kinds)
       : await call("eyebrowItems", { names: $("rvNames").checked });
     rv = { items, i: 0, done: new Set(), history: [] };
     for (const k of Object.keys(rvImgs)) delete rvImgs[k];
@@ -1339,6 +1416,7 @@ function rvRender() {
   $("rvAll").textContent = `Ret alle (${left})`;
   $("rvAll").disabled = !left;
   $("rvUndo").disabled = !rv.history.length;
+  if ($("rvList").hidden) return;
   $("rvList").innerHTML = rv.items.map((x, i) => `<button class="rv-row${rv.done.has(i) ? " done" : ""}" data-rv="${i}" aria-current="${i === rv.i}">
     <span class="no">Slide ${x.slide}</span><span>${esc(x.before)} → ${esc(x.after || "(slet)")}</span></button>`).join("");
   $("rvList").querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest" });
@@ -1596,6 +1674,8 @@ $("rvApply").addEventListener("click", () => rvApply().catch(fail));
 $("rvAll").addEventListener("click", () => rvApplyAll().catch(fail));
 $("rvUndo").addEventListener("click", () => rvUndo());
 $("rvList").addEventListener("click", (e) => { const b = e.target.closest("[data-rv]"); if (b) rvGo(+b.dataset.rv); });
+$("rvListToggle").addEventListener("click", () => { $("rvList").hidden = !$("rvList").hidden; $("rvListToggle").textContent = $("rvList").hidden ? "Vis alle fund" : "Skjul listen"; if (rv) rvRender(); });
+["rvLang", "rvUnit", "rvDec", "rvCur", "rvAddCur", "rvOnlyMoney"].forEach((id) => $(id).addEventListener("change", rvExample));
 rvShowMode();
 
 // Masters & filstørrelse

@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03g";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03h";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -719,11 +719,13 @@ function reformatOne(m, num, scale, cur, opts) {
   v *= SCALE(scale);
   // "auto" = Kvadrant-standard: behold en valuta der står i teksten (kr. bliver DKK), ellers DKK på dansk og USD på engelsk.
   const known = /^kr\.?$/i.test(cur) ? "DKK" : cur === "€" ? "EUR" : cur.toUpperCase();
-  const currency = opts.currency === "auto" ? known || LANG_CURRENCY[opts.lang]
+  // addCurrency: false = tal uden valuta (fx 125000) får ingen valuta på, kun enhed (125,0 t.).
+  const bare = !cur && opts.addCurrency === false;
+  const currency = bare ? "" : opts.currency === "auto" ? known || LANG_CURRENCY[opts.lang]
     : opts.currency === "keep" ? (cur ? cur.replace(/^kr$/i, "kr.") : "") : opts.currency;
-  // Slide/præsentation: beløb der allerede står i Kvadrant-form ("450 tDKK", "12,5 mDKK") får lov at beholde deres decimaler.
+  // Beløb der allerede står i Kvadrant-form ("450 tDKK", "12,5 mDKK") får lov at beholde deres decimaler.
   const own = /[.,](\d{1,2})$/.exec(num)?.[1].length || 0;
-  if (opts.onlyMoney && formatNumber(v, { ...opts, currency, decimals: own }) === m.trim()) return m;
+  if ((opts.onlyMoney || opts.keepFormatted) && formatNumber(v, { ...opts, currency, decimals: own }) === m.trim()) return m;
   return formatNumber(v, { ...opts, currency });
 }
 // Figurer med tekst, også inde i grupper.
@@ -1049,17 +1051,19 @@ async function findText({ q, repl = "", matchCase = false, whole = false, scope 
   return run(async (ctx) => (await textItems(ctx, scope)).flatMap((t) =>
     [...t.text.matchAll(rx)].map((m) => textProposal(t, m.index, m[0], repl))));
 }
+// Alle tal fra 1.000 (ikke årstal), med eller uden valuta; onlyMoney: kun beløb med valuta.
 async function numberItems(opts) {
   return run(async (ctx) => (await textItems(ctx, opts.scope)).flatMap((t) =>
-    reformatText(t.text, { ...opts, onlyMoney: true }).edits.map((e) => textProposal(t, e.start, t.text.substr(e.start, e.length), e.text, "Talformat"))));
+    reformatText(t.text, { ...opts, keepFormatted: true }).edits.map((e) => textProposal(t, e.start, t.text.substr(e.start, e.length), e.text, "Talformat"))));
 }
 const FIX_TEXT = { font: "Temaets skrift", color: "Nærmeste temafarve", title: "25 pt", body: "10 pt", commentary: "COMMENTARY", align: "Topjusteret", off: "Flyttet ind på sliden" };
 const FIX_LABEL = { font: "Skrift uden for temaet", color: "Farve uden for paletten", title: "Overskrift er ikke 25 pt", body: "Tekst i boks er ikke 10 pt",
   commentary: "Commentary uden versaler", align: "Ikke topjusteret", off: "Uden for sliden" };
-async function checkItems(progress) {
+// kinds: hvilke fund der skal med, fx ["font"] (skrift), ["title", "body"] (størrelse), ["color"] (farve).
+async function checkItems(progress, kinds = Object.keys(FIX_TEXT)) {
   const { issues } = await runCheck(progress);
   const palette = state.theme.map((c) => c.hex);
-  return Object.keys(FIX_TEXT).flatMap((fix) => issues[fix].map((it) => ({ kind: "fix", fix, ...it, label: FIX_LABEL[fix],
+  return Object.keys(FIX_TEXT).filter((k) => kinds.includes(k)).flatMap((fix) => issues[fix].map((it) => ({ kind: "fix", fix, ...it, label: FIX_LABEL[fix],
     before: it.detail || FIX_LABEL[fix], after: fix === "color" ? "#" + nearest(it.hex, palette) : fix === "font" ? (it.title ? state.fonts[0] : state.fonts[1] || state.fonts[0]) : FIX_TEXT[fix] })))
     .sort((a, b) => a.slide - b.slide);
 }
@@ -1526,7 +1530,7 @@ const OPS = {
   bankStatus, bankSync: (progress) => bankSync(progress), bankAdd, bankFlush: (progress) => bankFlush(progress),
   formatNumbers, fixFonts, themeFonts, cleanCopy: (progress) => cleanCopy(progress),
   formatCharts: (opts, progress) => formatCharts(opts, progress),
-  findText, numberItems, checkItems: (progress) => checkItems(progress), eyebrowItems, reviewGo, reviewApply,
+  findText, numberItems, checkItems: (kinds, progress) => checkItems(progress, kinds), eyebrowItems, reviewGo, reviewApply,
   guidesToggle, snapToGrid, setGap,
   insertPicture, snippetCapture, snippetInsert,
   mastersReport, elixirrCopy, sizeReport, shrinkCopy,
