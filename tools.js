@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03b";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03c";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -236,12 +236,19 @@ const BOXES = {
 };
 // Temafarven fra sliden (PowerPointApi 1.10), ellers fra det læste tema, ellers Kvadrants standard.
 const THEME_FALLBACK = { Dark1: ["Tekst 1", "27272C"], Dark2: ["Tekst 2", "262139"], Light2: ["Baggrund 2", "E0E3EC"] };
-async function themeColor(ctx, slide, name) {
-  try { const r = slide.themeColorScheme.getThemeColor(name); await ctx.sync(); if (r.value) return r.value.replace("#", ""); } catch {}
-  return themeHex(...THEME_FALLBACK[name]);
+// Slår op i sin egen PowerPoint.run, så en ældre PowerPoint uden themeColorScheme ikke stopper selve boksen.
+async function themeColor(name) {
+  try {
+    return await run(async (ctx) => {
+      const r = ctx.presentation.getSelectedSlides().getItemAt(0).themeColorScheme.getThemeColor(name);
+      await ctx.sync();
+      return r.value.replace("#", "");
+    });
+  } catch { return themeHex(...THEME_FALLBACK[name]); }
 }
 async function addBox(id) {
   const b = BOXES[id];
+  const fillHex = await themeColor(b.fill), textHex = b.white ? "FFFFFF" : await themeColor("Dark1");
   await run(async (ctx) => {
     const slide = ctx.presentation.getSelectedSlides().getItemAt(0);
     const { w, h } = state.slideSize;
@@ -249,14 +256,14 @@ async function addBox(id) {
     const left = b.right ? w * 0.72 : w * 0.06, top = b.below ? h * 0.27 + 22 : h * 0.27;
     const shape = slide.shapes.addGeometricShape("RoundRectangle", { left, top, width: bw, height: bh });
     shape.name = "Kvadrant " + b.name;
-    shape.fill.setSolidColor("#" + (await themeColor(ctx, slide, b.fill)));
+    shape.fill.setSolidColor("#" + fillHex);
     shape.fill.transparency = b.transparency;
     shape.lineFormat.visible = false;
     const tf = shape.textFrame;
     tf.textRange.text = b.text;
     tf.verticalAlignment = b.vAlign || "Top";
     tf.textRange.font.size = 10;
-    tf.textRange.font.color = b.white ? "#FFFFFF" : "#" + (await themeColor(ctx, slide, "Dark1"));
+    tf.textRange.font.color = "#" + textHex;
     tf.textRange.paragraphFormat.horizontalAlignment = b.align || "Left";
     if (b.bullets) tf.textRange.paragraphFormat.bulletFormat.visible = true;
     shape.load("id");
@@ -933,7 +940,8 @@ function openDialog(page, view, size) {
           if (typeof window[msg.cmd] === "function") window[msg.cmd]();
           return;
         }
-        if (!msg.op || !OPS[msg.op]) return;
+        if (!msg.op) return;
+        if (!OPS[msg.op]) { reply({ id: msg.id, ok: false, error: "Luk PowerPoint helt og åbn det igen for at få den nyeste Kvadrant" }); return; }
         const args = [...(msg.args || [])];
         if (WITH_PROGRESS.has(msg.op)) args.push((text) => reply({ id: msg.id, progress: text }));
         try { reply({ id: msg.id, ok: true, result: await OPS[msg.op](...args) }); }
