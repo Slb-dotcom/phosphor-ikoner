@@ -148,8 +148,11 @@
   .pic .t small { display: block; color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
   .pic .x { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(38,33,57,.8); color: #fff; font-size: 13px; line-height: 22px; text-align: center; display: none; }
   .pic:hover .x { display: block; }
-  .cv-pic .im { display: grid; place-items: center; font-size: 11px; color: var(--muted); }
-  .cv-pic .t b { color: var(--ink); }
+  .cv-list { display: grid; gap: 6px; }
+  button.cv { border: 0; width: 100%; text-align: left; font: inherit; }
+  button.cv:hover { box-shadow: inset 0 0 0 2px var(--ink); }
+  button.cv:disabled { opacity: .5; }
+  .cv-go { flex: none; font-size: 12px; font-weight: 600; color: var(--ink); text-decoration: underline; }
   .cv { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
   .cv .who { flex: 1; min-width: 0; }
   .cv .who b { color: var(--ink); }
@@ -295,7 +298,7 @@
       <div class="chips small" id="picCats"></div>
       <div class="hint">Billeder skaleres til højst 150 dpi ved fuld slidebredde, før de sættes ind, så filen ikke vokser. Er én figur markeret, lægges billedet inden i den.</div>
     </div>
-    <div id="cvBlock" hidden><div class="row" style="margin-bottom:6px"><span class="label">CV'er</span><span class="spacer"></span><label class="check"><input type="checkbox" id="cvTheme"> Brug denne præsentations design</label></div><div class="pic-grid" id="cvList" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))"></div></div>
+    <div id="cvBlock" hidden><div class="row" style="margin-bottom:6px"><span class="label">CV'er</span><span class="spacer"></span><label class="check"><input type="checkbox" id="cvTheme"> Brug denne præsentations design</label></div><div class="cv-list" id="cvList"></div></div>
     <div><div class="label" id="picHead" style="margin-bottom:6px"></div><div class="pic-grid" id="picList"></div></div>
   </section>
 
@@ -1142,7 +1145,6 @@ async function loadCv(ask) {
 }
 
 let picTimer, picObserver;
-const cvThumbs = {};
 async function renderPictures() {
   const toks = norm($("picSearch").value.trim()).split(/\s+/).filter(Boolean);
   const cats = [...new Set((picIndex || []).map((it) => it.cat))];
@@ -1155,18 +1157,10 @@ async function renderPictures() {
       .sort((a, b) => (toks.every((t) => norm(b.name).includes(t)) - toks.every((t) => norm(a.name).includes(t))) || a.index - b.index).slice(0, 12);
   }
   $("cvBlock").hidden = !cvHits.length;
-  // Hver CV-slide vises som billede (fra Billeder > _cv, lavet af cv-miniaturer.ps1), så man kan vælge den med den rigtige erfaring.
-  $("cvList").innerHTML = cvHits.map((s) => `<button class="pic wide-im cv-pic" data-cv="${s.index}" title="Sæt CV'et ind efter den slide, du står på">
-    <div class="im" data-cvthumb="${esc(s.slideId || "")}"></div>
-    <div class="t"><b>${esc(s.name || "CV")}</b>${s.sec ? `<span class="tag${/former|old/i.test(s.sec) ? " old" : ""}">${esc(s.sec)}</span>` : ""}<small>${esc(s.role)}${s.role ? " · " : ""}slide ${s.index + 1}</small></div></button>`).join("");
-  const cvDir = cvHits.length ? await sub(await billederDir(), "_cv") : null;
-  for (const el of document.querySelectorAll("#cvList [data-cvthumb]")) {
-    const id = el.dataset.cvthumb;
-    if (!cvDir || !id) continue;
-    cvThumbs[id] ||= await cvDir.getFileHandle(id + ".png").then((h) => h.getFile()).then((f) => URL.createObjectURL(f)).catch(() => "");
-    if (cvThumbs[id]) el.style.backgroundImage = `url(${cvThumbs[id]})`;
-    else el.textContent = "Intet billede endnu";
-  }
+  // Et klik sætter selve CV-sliden ind efter den slide, man står på, og går til den, så man ser den i PowerPoint.
+  $("cvList").innerHTML = cvHits.map((s) => `<button class="cv" data-cv="${s.index}" title="Sæt CV-sliden ind efter den slide, du står på">
+    <div class="who"><b>${esc(s.name || "CV")}</b>${s.sec ? `<span class="tag${/former|old/i.test(s.sec) ? " old" : ""}">${esc(s.sec)}</span>` : ""}
+    <div>${esc(s.role)}${s.role ? " · " : ""}slide ${s.index + 1} i Kvadrant CVs.pptx</div></div><span class="cv-go">Sæt ind</span></button>`).join("");
   const hits = (picIndex || []).filter((it) => (picCat === "all" || it.cat === picCat) && toks.every((t) => it.search.includes(t)));
   picShown = hits.slice(0, 150);
   $("picHead").textContent = !picIndex ? "" : hits.length ? `${hits.length} billeder${hits.length > picShown.length ? ` · viser de første ${picShown.length}, søg for at indsnævre` : ""}` : "Ingen billeder matcher";
@@ -1246,8 +1240,8 @@ async function insertCv(i) {
   }
   Object.assign(files, fflate.unzipSync(all, { filter: (f) => need.has(f.name) }));
   await idb("data", "readwrite", (st) => st.put({ id: "tmp:insert", data: toB64(KvPptx.zip(files)) }));
-  await call("insertBlock", "tmp:insert", $("cvTheme").checked);
-  toast("CV sat ind efter den slide, du står på");
+  await call("insertBlock", "tmp:insert", $("cvTheme").checked, true);
+  toast("CV-sliden er sat ind efter den slide, du stod på. Er det den forkerte, så slet den og vælg en anden.");
 }
 
 // ---------- Figurer ----------

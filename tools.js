@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03h";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03i";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -495,17 +495,26 @@ async function saveSlides(all, progress) {
   return ids.length;
 }
 
-async function insertBlock(id, useTheme) {
+// go: gå til den indsatte slide bagefter (bruges til CV'er, så man ser sliden med det samme).
+async function insertBlock(id, useTheme, go = false) {
   const rec = await dbDo("data", "readonly", (st) => st.get(id));
   if (!rec) throw new Error("Sliden findes ikke længere i biblioteket");
   await run(async (ctx) => {
-    const sel = ctx.presentation.getSelectedSlides();
+    const sel = ctx.presentation.getSelectedSlides(), all = ctx.presentation.slides;
     sel.load("items/id");
+    all.load("items/id");
     await ctx.sync();
+    const before = new Set(all.items.map((s) => s.id));
     const opts = { formatting: useTheme ? "UseDestinationTheme" : "KeepSourceFormatting" };
     if (sel.items[0]) opts.targetSlideId = sel.items[0].id;
     ctx.presentation.insertSlidesFromBase64(rec.data, opts);
     await ctx.sync();
+    if (!go) return;
+    const now = ctx.presentation.slides;
+    now.load("items/id");
+    await ctx.sync();
+    const added = now.items.find((s) => !before.has(s.id));
+    if (added) { ctx.presentation.setSelectedSlides([added.id]); await ctx.sync(); }
   });
 }
 async function deleteBlock(id) {
