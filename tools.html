@@ -220,6 +220,16 @@
         <button class="chip" data-stamp="stampSourceEn">Source: …</button>
       </div>
     </div>
+    <div class="card">
+      <span class="label">Kvadrant-bokse</span>
+      <div class="hint">Runde hjørner, temaets farver efter farvereglerne og 10 pt tekst. Sættes på den slide, du står på.</div>
+      <div class="chips" id="boxes">
+        <button class="chip" data-box="boxSubheader">Underoverskrift <span class="hint">· Tekst 2, 90 %</span></button>
+        <button class="chip" data-box="boxBackground">Baggrundsboks <span class="hint">· Baggrund 2, 75 %</span></button>
+        <button class="chip" data-box="boxCommentaryHead">COMMENTARY-overskrift</button>
+        <button class="chip" data-box="boxCommentaryBody">Commentary-tekst <span class="hint">· topjusteret</span></button>
+      </div>
+    </div>
   </section>
 
   <section id="harvey">
@@ -293,9 +303,13 @@
   </section>
 
   <section id="check">
-    <div><h1>Kvadrant-tjek</h1><p class="lead">Skrifttyper og farver uden for temaet, tekst uden for sliden og tomme pladsholdere.</p></div>
+    <div><h1>Kvadrant-tjek</h1><p class="lead">Tjekker Kvadrants regler: temaets skrift og farver, overskrift 25 pt på højst 2 linjer, tekst i bokse 10 pt og topjusteret, COMMENTARY med versaler, kilde på indholdsslides og tekst-tunge slides.</p></div>
     <div class="card"><div class="row"><button class="primary" id="checkRun">Tjek præsentationen</button><span class="hint" id="checkStatus"></span></div></div>
     <div id="checkResult" style="display:grid;gap:12px"></div>
+    <div class="card">
+      <span class="label">Husk selv</span>
+      <div class="hint" style="line-height:1.7">☐ Overskriften er slidens vigtigste pointe, ikke et resumé<br>☐ Projektnavnet (fx "Box") i stedet for kundens navn, og aldrig kundens logo<br>☐ Fodnoter og kilder passer til oversigtssliden<br>☐ Bokse har runde hjørner, og grafer har hvid baggrund<br>☐ Fed skrift til indledningen af punkter, temaets skrifttyper overalt</div>
+    </div>
     <div class="card">
       <div class="row"><div style="flex:1;min-width:220px"><span class="label">Rens før afsendelse</span>
         <div class="hint" style="margin-top:4px">Fjerner speaker-noter og kommentarer i en kopi, der åbner som en ny præsentation. Originalen røres ikke. Gem kopien under et nyt navn.</div></div>
@@ -745,6 +759,13 @@ const CHECKS = {
   color: { title: "Farver uden for paletten", fix: "Brug nærmeste temafarve" },
   off: { title: "Uden for sliden", fix: "Flyt ind på sliden" },
   empty: { title: "Tomme pladsholdere", fix: "Slet dem" },
+  title: { title: "Overskrift er ikke 25 pt", fix: "Sæt til 25 pt" },
+  titleLong: { title: "Overskrift over 2 linjer", fix: null },
+  body: { title: "Tekst i bokse er ikke 10 pt", fix: "Sæt til 10 pt" },
+  commentary: { title: "\"Commentary\" uden versaler", fix: "Skriv COMMENTARY" },
+  align: { title: "Tekst i bokse er ikke topjusteret", fix: "Topjustér" },
+  source: { title: "Indholdsslides uden kilde", fix: null },
+  heavy: { title: "Tekst-tunge slides (over 220 ord)", fix: null },
 };
 let issues = null, fonts = [];
 async function runCheck() {
@@ -757,7 +778,7 @@ function renderIssues() {
   const total = Object.values(issues).reduce((n, l) => n + l.length, 0);
   $("checkResult").innerHTML = (total ? "" : `<div class="card ok-card"><span class="dot">✓</span><div><b>Alt ser fint ud.</b><div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div></div></div>`) +
     Object.entries(CHECKS).filter(([k]) => issues[k].length).map(([k, c]) => `<div class="card">
-      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b><button class="ghost" data-fix="${k}">${c.fix}</button></div>
+      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b>${c.fix ? `<button class="ghost" data-fix="${k}">${c.fix}</button>` : ""}</div>
       <div style="display:grid;gap:6px">${issues[k].slice(0, 40).map((it, i) => `<div class="issue"><span>Slide ${it.slide} · ${esc(it.name)}${it.detail ? " · " + esc(it.detail) : ""}</span><button data-go="${k}:${i}">Gå til</button></div>`).join("")}</div>
       ${issues[k].length > 40 ? `<div class="hint">… og ${issues[k].length - 40} mere</div>` : ""}
       ${k === "font" ? `<div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div>` : ""}
@@ -790,6 +811,8 @@ $("gridRun").addEventListener("click", runGrid);
 $("stamps").addEventListener("click", (e) => {
   const b = e.target.closest("[data-stamp]");
   if (b) call("stamp", b.dataset.stamp).then(() => toast("Indsat: " + b.textContent), fail);
+  const box = e.target.closest("[data-box]");
+  if (box) call("box", box.dataset.box).then(() => toast("Boks indsat"), fail);
 });
 
 $("presets").innerHTML = [0, 25, 50, 75, 100].map((p) => `<button data-p="${p}">${p}%</button>`).join("");

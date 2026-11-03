@@ -223,6 +223,49 @@ async function addStamp(id) {
   });
 }
 
+// ---------- Kvadrant-bokse ----------
+// Faste farveregler: underoverskrift = Tekst 2 ved 90 % gennemsigtighed, baggrundsboks = Baggrund 2 ved 75 %,
+// COMMENTARY-overskrift = Tekst 2 (0 %) med hvide versaler, COMMENTARY-tekst = Baggrund 2 (0 %), topjusteret.
+// Alle bokse har runde hjørner og 10 pt tekst i temaets skrift.
+const BOXES = {
+  boxSubheader: { name: "Underoverskrift", fill: "Dark2", transparency: 0.9, text: "Sub-header", align: "Center", vAlign: "Middle", w: 0.55, h: 20 },
+  boxBackground: { name: "Baggrundsboks", fill: "Light2", transparency: 0.75, text: "", w: 0.55, h: 0.5 },
+  boxCommentaryHead: { name: "COMMENTARY", fill: "Dark2", transparency: 0, text: "COMMENTARY", white: true, align: "Center", vAlign: "Middle", w: 0.25, h: 20, right: true },
+  boxCommentaryBody: { name: "Commentary", fill: "Light2", transparency: 0, text: "Kommentar", vAlign: "Top", bullets: true, w: 0.25, h: 0.55, right: true, below: true },
+};
+// Temafarven fra sliden (PowerPointApi 1.10), ellers fra det læste tema, ellers Kvadrants standard.
+const THEME_FALLBACK = { Dark1: ["Tekst 1", "27272C"], Dark2: ["Tekst 2", "262139"], Light2: ["Baggrund 2", "E0E3EC"] };
+async function themeColor(ctx, slide, name) {
+  try { const r = slide.themeColorScheme.getThemeColor(name); await ctx.sync(); if (r.value) return r.value.replace("#", ""); } catch {}
+  return themeHex(...THEME_FALLBACK[name]);
+}
+async function addBox(id) {
+  const b = BOXES[id];
+  await run(async (ctx) => {
+    const slide = ctx.presentation.getSelectedSlides().getItemAt(0);
+    const { w, h } = state.slideSize;
+    const bw = b.w * w, bh = b.h <= 1 ? b.h * h : b.h;
+    const left = b.right ? w * 0.72 : w * 0.06, top = b.below ? h * 0.27 + 22 : h * 0.27;
+    const shape = slide.shapes.addGeometricShape("RoundRectangle", { left, top, width: bw, height: bh });
+    shape.name = "Kvadrant " + b.name;
+    shape.fill.setSolidColor("#" + (await themeColor(ctx, slide, b.fill)));
+    shape.fill.transparency = b.transparency;
+    shape.lineFormat.visible = false;
+    const tf = shape.textFrame;
+    tf.textRange.text = b.text;
+    tf.verticalAlignment = b.vAlign || "Top";
+    tf.textRange.font.size = 10;
+    tf.textRange.font.color = b.white ? "#FFFFFF" : "#" + (await themeColor(ctx, slide, "Dark1"));
+    tf.textRange.paragraphFormat.horizontalAlignment = b.align || "Left";
+    if (b.bullets) tf.textRange.paragraphFormat.bulletFormat.visible = true;
+    shape.load("id");
+    await ctx.sync();
+    try { shape.adjustments.set(0, Math.min(0.5, 4 / Math.min(bw, bh))); await ctx.sync(); } catch { /* ældre PowerPoint: standardrunding */ }
+    slide.setSelectedShapes([shape.id]);
+    await ctx.sync();
+  });
+}
+
 // ---------- Harvey ball ----------
 // p = 0-100 (alle værdier, fx 33); fyldet starter kl. 12 og går med uret.
 function harveySvg(p, hex, pt) {
@@ -285,10 +328,14 @@ async function runCheck(progress) {
   const families = state.fonts.map((f) => f.split(" ")[0].toLowerCase());
   const palette = state.theme.map((c) => c.hex);
   const { w, h } = state.slideSize;
-  const issues = { font: [], color: [], off: [], empty: [] };
+  // Kvadrant-regler: overskrift 25 pt og højst 2 linjer, brødtekst i bokse 10 pt, "COMMENTARY" med versaler,
+  // tekst i bokse topjusteret, kilde på indholdsslides og ikke for tekst-tunge slides.
+  const issues = { font: [], color: [], off: [], empty: [], title: [], titleLong: [], body: [], commentary: [], align: [], source: [], heavy: [] };
   await run(async (ctx) => {
     const slides = ctx.presentation.slides;
     slides.load("items/id");
+    await ctx.sync();
+    slides.items.forEach((s) => s.layout.load("name"));
     await ctx.sync();
     for (const [i, slide] of slides.items.entries()) {
       progress(`Slide ${i + 1} af ${slides.items.length} …`);
@@ -298,23 +345,41 @@ async function runCheck(progress) {
       for (const s of slide.shapes.items) {
         if (s.left < -2 || s.top < -2 || s.left + s.width > w + 2 || s.top + s.height > h + 2) issues.off.push({ ...base(s), detail: "" });
       }
+      let words = 0, hasSource = false, hasTitle = false;
       for (const s of slide.shapes.items.filter((x) => TEXTY.includes(x.type))) {
         const r = s.textFrame.textRange;
-        r.load("text,font/name,font/color");
+        r.load("text,font/name,font/color,font/size");
+        s.textFrame.load("verticalAlignment");
         const fill = s.type === "GeometricShape" ? s.fill : null;
         fill?.load("type,foregroundColor");
         try { await ctx.sync(); } catch { continue; }
-        const text = r.text.trim();
+        const text = r.text.trim(), size = r.font.size, isTitle = /title|titel/i.test(s.name);
         if (!text) { if (s.type === "Placeholder") issues.empty.push({ ...base(s), detail: "" }); }
         else {
           const font = r.font.name;
-          if (font && families.length && !families.includes(font.split(" ")[0].toLowerCase())) issues.font.push({ ...base(s), detail: font, title: /title|titel/i.test(s.name) });
+          if (font && families.length && !families.includes(font.split(" ")[0].toLowerCase())) issues.font.push({ ...base(s), detail: font, title: isTitle });
           const color = r.font.color?.replace("#", "");
           if (color && palette.length && !onPalette(color, palette)) issues.color.push({ ...base(s), detail: "#" + color, kind: "text", hex: color });
+          words += (text.match(/\S+/g) || []).length;
+          if (/^\s*(source|sources|kilde|kilder)\s*:/im.test(text)) hasSource = true;
+          if (isTitle) {
+            hasTitle = true;
+            if (size && size !== 25) issues.title.push({ ...base(s), detail: `${size} pt` });
+            const perLine = Math.max(10, s.width / ((size || 25) * 0.52));   // ca. tegn pr. linje
+            const lines = text.split(/\r|\n|\v/).reduce((n, l) => n + Math.max(1, Math.ceil(l.length / perLine)), 0);
+            if (lines > 2) issues.titleLong.push({ ...base(s), detail: `ca. ${lines} linjer` });
+          }
+          if (/^commentary$/i.test(text) && text !== "COMMENTARY") issues.commentary.push({ ...base(s), detail: text });
+          const boxText = !isTitle && s.type !== "Placeholder" && text.length >= 40 && !/^\s*(source|kilde)/i.test(text);
+          if (boxText && size && size >= 6 && size < 18 && size !== 10) issues.body.push({ ...base(s), detail: `${size} pt` });
+          if (boxText && fill?.type === "Solid" && text.length >= 120 && !/^Top/.test(s.textFrame.verticalAlignment || "")) issues.align.push({ ...base(s), detail: "" });
         }
         const fc = fill?.type === "Solid" && fill.foregroundColor?.replace("#", "");
         if (fc && palette.length && !onPalette(fc, palette)) issues.color.push({ ...base(s), detail: "#" + fc + " (fyld)", kind: "fill", hex: fc });
       }
+      const content = hasTitle && slide.shapes.items.length >= 4 && !/breaker|cover|end|agenda|table of contents|section|afsnit/i.test(slide.layout.name);
+      if (content && !hasSource) issues.source.push({ slide: i + 1, slideId: slide.id, name: "Ingen kilde", detail: "" });
+      if (words > 220) issues.heavy.push({ slide: i + 1, slideId: slide.id, name: `${words} ord`, detail: "" });
     }
   });
   return { issues, fonts: state.fonts };
@@ -324,6 +389,7 @@ function goTo(it) {
   return run(async (ctx) => {
     ctx.presentation.setSelectedSlides([it.slideId]);
     await ctx.sync();
+    if (!it.shapeId) return;   // fund for hele sliden (fx manglende kilde)
     ctx.presentation.slides.getItem(it.slideId).setSelectedShapes([it.shapeId]);
     await ctx.sync();
   });
@@ -340,6 +406,10 @@ async function fixAll(kind, list) {
       if (kind === "color" && it.kind === "text") s.textFrame.textRange.font.color = "#" + nearest(it.hex, palette);
       if (kind === "color" && it.kind === "fill") s.fill.setSolidColor("#" + nearest(it.hex, palette));
       if (kind === "empty") s.delete();
+      if (kind === "title") s.textFrame.textRange.font.size = 25;
+      if (kind === "body") s.textFrame.textRange.font.size = 10;
+      if (kind === "commentary") s.textFrame.textRange.text = "COMMENTARY";
+      if (kind === "align") s.textFrame.verticalAlignment = "Top";
       if (kind === "off") {
         s.load("left,top,width,height");
         await ctx.sync();
@@ -710,7 +780,7 @@ function formatChartXml(xml, { size = null, gridlines = false, legendBottom = tr
 
   // Ingen baggrund eller ramme om diagram og plotområde.
   const space = doc.documentElement, chart = kids(space, "chart")[0], plot = chart && kids(chart, "plotArea")[0];
-  if (chart) setSpPr(space, NONE, ["chart"]);
+  if (chart) setSpPr(space, `${solid("bg1")}<a:ln><a:noFill/></a:ln>`, ["chart"]);   // Kvadrant: hvid baggrund i alle grafer
   if (plot) setSpPr(plot, NONE, ["layout", "barChart", "bar3DChart", "lineChart", "line3DChart", "pieChart", "pie3DChart", "doughnutChart",
     "areaChart", "area3DChart", "scatterChart", "radarChart", "bubbleChart", "catAx", "valAx", "dateAx", "serAx", "dTable"]);
 
@@ -822,6 +892,7 @@ const OPS = {
   agendaScan, agendaInsert, agendaTemplateSave,
   grid: (opts) => window.kvadrantGrid({ cols: opts.cols, gap: opts.gapCm * CM, same: opts.same }),
   stamp: addStamp,
+  box: addBox,
   harvey: addHarvey,
   saveSlides: (all, progress) => saveSlides(all, progress),
   insertBlock, deleteBlock,
