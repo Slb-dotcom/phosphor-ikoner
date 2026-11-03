@@ -97,6 +97,14 @@
   .agenda-item .no { font-size: 11px; font-weight: 700; color: var(--muted); text-align: right; }
   .agenda input[type=text] { height: 32px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; min-width: 0; outline: none; }
   .agenda-item.off input[type=text] { color: var(--muted); background: var(--bg); }
+  .agenda-sub { margin: -2px 0 6px 52px; font-size: 11px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Harvey "Andet": kun et lille talfelt */
+  body.compact header, body.compact #pctRange, body.compact #presets, body.compact #hvColors, body.compact #harvey .hint { display: none !important; }
+  body.compact main { padding: 12px; }
+  body.compact #harvey .card { padding: 10px; gap: 10px; }
+  body.compact .harvey { grid-template-columns: 40px 1fr; gap: 10px; }
+  body.compact #ballPreview { width: 40px; height: 40px; }
+  body.compact .pct input { width: 74px; height: 38px; font-size: 20px; }
 
   /* Harvey */
   .harvey { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
@@ -216,8 +224,8 @@
   <button data-view="charts"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>Grafer</button>
   <button data-view="numbers"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,88H175.4l8.47-46.57a8,8,0,0,0-15.74-2.86l-9,49.43H111.4l8.47-46.57a8,8,0,0,0-15.74-2.86L95.14,88H48a8,8,0,0,0,0,16H92.23L83.5,152H32a8,8,0,0,0,0,16H80.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,80,224a8,8,0,0,0,7.86-6.57l9-49.43H144.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,144,224a8,8,0,0,0,7.86-6.57l9-49.43H208a8,8,0,0,0,0-16H163.77l8.73-48H224a8,8,0,0,0,0-16Zm-76.5,64H99.77l8.73-48h47.73Z"/></svg>Talformat</button>
   <div class="grp">Kvalitet</div>
-  <button data-view="replace"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>Søg & ret</button>
-  <button data-view="check"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></svg>Tjek & rens</button>
+  <button data-view="replace"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>Kvadrant Layout</button>
+  <button data-view="check"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></svg>Tjek</button>
   <button data-view="masters"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></svg>Masters & størrelse</button>
 </aside>
 
@@ -228,7 +236,7 @@
   </section>
 
   <section id="agenda">
-    <div><h1>Agenda</h1><p class="lead">Bygges af afsnits-slides, fx "Icons · 01", i jeres eget agenda-design. Ret teksterne, før du indsætter.</p></div>
+    <div><h1>Agenda</h1><p class="lead">Bygges af præsentationens sektioner, i jeres eget agenda-design. Ret teksterne, før du indsætter.</p></div>
     <div class="card tpl">
       <div id="tplThumb" class="thumb">Ingen</div>
       <div style="display:grid;gap:6px">
@@ -242,7 +250,7 @@
       <div class="agenda" id="agendaList"><div class="hint">Læser slides …</div></div>
     </div>
     <div class="card">
-      <label class="check"><input type="checkbox" id="agendaEach" checked> En agenda før hvert afsnit, med afsnittet fremhævet</label>
+      <label class="check"><input type="checkbox" id="agendaEach" checked> En agenda før hver sektion, med sektionen i en lyseblå boks</label>
       <div class="row"><button class="primary" id="agendaInsert" disabled>Indsæt agenda</button><span class="hint">Erstatter agendaer, Kvadrant har lavet før</span></div>
     </div>
   </section>
@@ -261,12 +269,21 @@
       <span class="label">Præcis afstand</span>
       <div class="row">
         <label class="field">Afstand <input type="text" id="gapCm" value="0,3"> cm</label>
-        <button class="ghost" id="gapH">Vandret</button><button class="ghost" id="gapV">Lodret</button>
+        <button class="primary" id="gapBoth">Vandret og lodret</button><button class="ghost" id="gapH">Kun vandret</button><button class="ghost" id="gapV">Kun lodret</button>
       </div>
-      <div class="hint">Den første figur bliver stående, og resten stilles med præcis denne afstand. Grupper flyttes samlet. Markerer du figurer inde i én gruppe, flyttes de inde i gruppen.</div>
+      <div class="hint">"Vandret og lodret" giver samme afstand begge veje: bokse ved siden af hinanden får afstanden mellem kolonnerne, og bokse over hinanden får den samme afstand lodret. Den øverste til venstre bliver stående. Grupper flyttes samlet; markerer du figurer inde i én gruppe, flyttes de inde i gruppen.</div>
     </div>
     <div class="card">
       <span class="label">Hjælpegitter</span>
+      <div class="chips" id="gPresets">
+        <button class="chip" data-preset="full">Fuld bredde</button>
+        <button class="chip" data-preset="two">2 kolonner</button>
+        <button class="chip" data-preset="three">3 kolonner</button>
+        <button class="chip" data-preset="commentary">Indhold + COMMENTARY</button>
+        <button class="chip" data-preset="off">Skjul</button>
+      </div>
+      <div class="hint">Kvadrants fire typiske layouts. Kanterne følger overskriften på sliden, og kolonnerne starter under den. Gitteret er kun tynde streger, så du kan klikke på figurerne inde i kolonnerne. Snap lægger de markerede figurer på kolonnerne.</div>
+      <details><summary class="hint" style="cursor:pointer">Eget gitter</summary><div style="display:grid;gap:10px;margin-top:10px">
       <div class="row">
         <label class="field">Kolonner <input type="text" id="gCols"></label>
         <label class="field">Rækker <input type="text" id="gRows"></label>
@@ -278,10 +295,12 @@
         <label class="field">top <input type="text" id="gT"></label>
         <label class="field">bund <input type="text" id="gB"> cm</label>
       </div>
+      <div class="row"><button class="ghost" id="gToggle">Vis eget gitter</button></div>
+      </div></details>
       <label class="check"><input type="checkbox" id="gAll"> På alle slides (ellers de markerede)</label>
       <label class="check"><input type="checkbox" id="gKeep"> Snap flytter kun (behold størrelsen)</label>
-      <div class="row"><button class="primary" id="gToggle">Vis / skjul gitter</button><button class="ghost" id="gSnap">Snap markerede til gitteret</button></div>
-      <div class="hint">PowerPoint lader ikke tilføjelser styre de rigtige hjælpelinjer. Gitteret tegnes derfor som gennemsigtige felter bagerst på sliden (de hedder KV-gitter). Snap lægger figurernes kanter på kolonner og rækker, også på tværs af mellemrummene. Skjul gitteret, før du sender. Kvadrant-tjek finder det, hvis det er glemt. I Genveje-baren er 1 = snap og 2 = vis/skjul.</div>
+      <div class="row"><button class="primary" id="gSnap">Snap markerede til gitteret</button></div>
+      <div class="hint">PowerPoint lader ikke tilføjelser styre de rigtige hjælpelinjer, så gitteret er figurer bagerst på sliden (de hedder KV-gitter). Skjul det, før du sender; Tjek finder det, hvis det er glemt. I Genveje-baren er 1 = snap og 2 = vis/skjul.</div>
     </div>
   </section>
 
@@ -318,9 +337,10 @@
   </section>
 
   <section id="replace">
-    <div><h1>Søg & ret</h1><p class="lead">Vælg, hvad der skal findes, og tryk Søg. Gå fundene igennem ét ad gangen: Ret (Enter) eller Fortsæt (→). Ctrl+Z fortryder.</p></div>
+    <div><h1>Kvadrant Layout</h1><p class="lead">Vælg, hvad der skal gennemgås, og tryk Søg. Gå fundene igennem ét ad gangen: Ret (Enter) eller Fortsæt (→). Ctrl+Z fortryder. "Alt" er det sidste gennemtjek før afsendelse.</p></div>
     <div class="card">
       <div class="chips small" id="rvModes">
+        <button class="chip" data-mode="all">Alt</button>
         <button class="chip" data-mode="text" aria-pressed="true">Søg og erstat</button>
         <button class="chip" data-mode="numbers">Tal</button>
         <button class="chip" data-mode="font">Skrift</button>
@@ -344,6 +364,11 @@
         <div class="hint">Alle tal fra 1.000 findes, med og uden valuta (årstal springes over). Fx <b id="rvEx1"></b> og <b id="rvEx2"></b>.</div>
       </div>
       <div class="rv-opts hint" id="rvCheckHint" hidden></div>
+      <div class="rv-opts" id="rvFonts" hidden>
+        <div class="row"><span class="label">Skrifttyper i præsentationen</span><span class="spacer"></span><button class="ghost" id="fontScan">Vis skrifttyper</button></div>
+        <div id="fontList" class="hint">Tryk Vis skrifttyper for at se, hvilke skrifter der er brugt, og på hvilke slides.</div>
+        <datalist id="fontNamesList"></datalist>
+      </div>
       <div class="rv-opts" id="rvEyebrow" hidden>
         <div class="hint">Nummeret i eyebrow'en (den lille tekst over overskriften, fx "02 | Marked") og på afsnits-slides følger præsentationens sektioner. Kun sektioner med numre tæller med. Kræver sektioner (højreklik mellem to slides i oversigten &gt; Tilføj sektion).</div>
         <label class="check"><input type="checkbox" id="rvNames" checked> Ret også sektionsnavnet, når eyebrow'en viser et andet afsnits navn</label>
@@ -362,6 +387,16 @@
       </div>
       <div><button class="ghost" id="rvListToggle" style="height:28px;font-size:11.5px">Vis alle fund</button></div>
       <div class="rv-list" id="rvList" hidden></div>
+    </div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Skrift og overskrifter på én gang</span>
+        <div class="hint" style="margin-top:4px">Overskrifter får temaets overskriftsfont og 25 pt, al anden tekst brødtekstfonten (<b id="fontNames">læses ved klik</b>). Fed og farve bevares.</div></div>
+        <button class="ghost" id="fontSlide">Fix på sliden</button><button class="ghost" id="fontDeck">Fix i hele præsentationen</button></div>
+    </div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Rens</span>
+        <div class="hint" style="margin-top:4px">Slet tomme pladsholdere og hjælpegitter i præsentationen, eller lav en kopi uden speaker-noter og kommentarer (originalen røres ikke).</div></div>
+        <button class="ghost" id="cleanEmpty">Slet tomme pladsholdere</button><button class="ghost" id="cleanGuides">Fjern hjælpegitter</button><button class="ghost" id="cleanRun">Kopi uden noter og kommentarer</button></div>
     </div>
   </section>
   <section id="masters">
@@ -478,22 +513,12 @@
   </section>
 
   <section id="check">
-    <div><h1>Kvadrant-tjek</h1><p class="lead">Tjekker Kvadrants regler: temaets skrift og farver, overskrift 25 pt på højst 2 linjer, tekst i bokse 10 pt og topjusteret, COMMENTARY med versaler, kilde på indholdsslides og tekst-tunge slides.</p></div>
+    <div><h1>Kvadrant-tjek</h1><p class="lead">Tjekker Kvadrants regler: temaets skrift og farver, overskrift 25 pt på højst 2 linjer, tekst i bokse 10 pt og topjusteret, COMMENTARY med versaler, kilde på indholdsslides og tekst-tunge slides. Rettelserne laves i Kvadrant Layout.</p></div>
     <div class="card"><div class="row"><button class="primary" id="checkRun">Tjek præsentationen</button><span class="hint" id="checkStatus"></span></div></div>
     <div id="checkResult" style="display:grid;gap:12px"></div>
     <div class="card">
       <span class="label">Husk selv</span>
       <div class="hint" style="line-height:1.7">☐ Overskriften er slidens vigtigste pointe, ikke et resumé<br>☐ Projektnavnet (fx "Box") i stedet for kundens navn, og aldrig kundens logo<br>☐ Fodnoter og kilder passer til oversigtssliden<br>☐ Bokse har runde hjørner, og grafer har hvid baggrund<br>☐ Fed skrift til indledningen af punkter, temaets skrifttyper overalt</div>
-    </div>
-    <div class="card">
-      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Skrift og overskrifter</span>
-        <div class="hint" style="margin-top:4px">Læser temaets standardskrifter (<b id="fontNames">læses ved klik</b>). Overskrifter får overskriftsfonten og 25 pt, al anden tekst brødtekstfonten. Fed og farve bevares.</div></div>
-        <button class="ghost" id="fontSlide">Fix på sliden</button><button class="ghost" id="fontDeck">Fix i hele præsentationen</button></div>
-    </div>
-    <div class="card">
-      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Rens før afsendelse</span>
-        <div class="hint" style="margin-top:4px">Fjerner speaker-noter og kommentarer i en kopi, der åbner som en ny præsentation. Originalen røres ikke. Gem kopien under et nyt navn.</div></div>
-        <button class="ghost" id="cleanRun">Lav renset kopi</button></div>
     </div>
   </section>
 </main>
@@ -571,7 +596,7 @@ const KEY_GROUPS = [
               ["H", "Harvey ball …", "view:harvey"], ["K", "Kvadrant-tjek …", "view:check"]]],
   ["Tekst", [["+", "Større tekst", "fontBigger", "", 1], ["-", "Mindre tekst", "fontSmaller", "", 1]]],
   ["Gitter", [["1", "Snap til hjælpegitter", "snapGrid", "", 1], ["2", "Vis / skjul hjælpegitter", "toggleGuides", "", 1], ["3", "Afstand og gitter …", "view:grid"],
-              ["4", "Billeder & CV …", "view:pictures"], ["5", "Figurer …", "view:snippets"], ["6", "Søg & ret …", "view:replace"]]],
+              ["4", "Billeder & CV …", "view:pictures"], ["5", "Figurer …", "view:snippets"], ["6", "Kvadrant Layout …", "view:replace"]]],
 ];
 const ARROWS = { ArrowRight: "→", ArrowLeft: "←", ArrowDown: "↓", ArrowUp: "↑", "_": "-", "?": "+" };
 const byKey = {};
@@ -595,11 +620,18 @@ let agendaItems = null;
 async function agendaScan() {
   $("agendaList").innerHTML = '<div class="hint">Læser slides …</div>';
   $("agendaInsert").disabled = true;
-  try { agendaItems = await call("agendaScan"); } catch (e) { agendaItems = []; $("agendaList").innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+  let res;
+  try { res = await call("agendaScan"); } catch (e) { agendaItems = []; $("agendaList").innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+  agendaItems = Array.isArray(res) ? res : res.items;   // ældre runtime gav en liste
   if (!agendaItems.length) { $("agendaList").innerHTML = '<div class="hint">Fandt ingen slides med titler.</div>'; return; }
-  $("agendaList").innerHTML = agendaItems.map((it, i) => `<div class="agenda-item${it.on ? "" : " off"}">
-    <span class="no">${it.index + 1}</span><input type="checkbox" data-i="${i}" ${it.on ? "checked" : ""} aria-label="Med i agendaen">
-    <input type="text" data-i="${i}" value="${esc(it.title)}" aria-label="Agendapunkt"></div>`).join("");
+  const bySection = res.mode === "sections";
+  // Med sektioner: ét punkt pr. sektion, og slidenes overskrifter vises under, så man kan se, hvad der er i hver.
+  $("agendaList").innerHTML = (bySection ? '<div class="hint">Punkterne er præsentationens sektioner. Ret navnet her, hvis det skal stå anderledes på agendaen.</div>'
+    : '<div class="hint">Præsentationen har ingen sektioner, så punkterne er afsnits-slides. Tilføj sektioner (højreklik mellem to slides &gt; Tilføj sektion) for at bygge agendaen på dem.</div>')
+    + agendaItems.map((it, i) => `<div class="agenda-item${it.on ? "" : " off"}">
+    <span class="no">${bySection ? String(i + 1).padStart(2, "0") : it.index + 1}</span><input type="checkbox" data-i="${i}" ${it.on ? "checked" : ""} aria-label="Med i agendaen">
+    <input type="text" data-i="${i}" value="${esc(it.title)}" aria-label="Agendapunkt"></div>
+    ${it.slides?.length ? `<div class="agenda-sub">${it.slides.map(esc).join(" · ")}</div>` : ""}`).join("");
   $("agendaInsert").disabled = false;
 }
 
@@ -981,20 +1013,28 @@ const runNumbers = (scope = "selection") => call("formatNumbers", { ...nfOpts(),
   .then((n) => toast(n ? `Formateret ${n} tal` : scope === "selection" ? "Fandt ingen tal at formatere" : "Fandt ingen beløb med valuta"), fail);
 
 // ---------- Tjek ----------
+// Tjek viser kun, hvad der er galt. Rettelserne laves i Kvadrant Layout (mode = den knap, der åbnes; "rens" = Rens-kortet).
 const CHECKS = {
-  font: { title: "Skrifttyper uden for temaet", fix: "Brug temaets skrift" },
-  color: { title: "Farver uden for paletten", fix: "Brug nærmeste temafarve" },
-  off: { title: "Uden for sliden", fix: "Flyt ind på sliden" },
-  empty: { title: "Tomme pladsholdere", fix: "Slet dem" },
-  title: { title: "Overskrift er ikke 25 pt", fix: "Sæt til 25 pt" },
-  titleLong: { title: "Overskrift over 2 linjer", fix: null },
-  body: { title: "Tekst i bokse er ikke 10 pt", fix: "Sæt til 10 pt" },
-  commentary: { title: "\"Commentary\" uden versaler", fix: "Skriv COMMENTARY" },
-  align: { title: "Tekst i bokse er ikke topjusteret", fix: "Topjustér" },
-  source: { title: "Indholdsslides uden kilde", fix: null },
-  heavy: { title: "Tekst-tunge slides (over 220 ord)", fix: null },
-  guides: { title: "Hjælpegitter ligger stadig på slides", fix: "Fjern gitteret" },
+  font: { title: "Skrifttyper uden for temaet", mode: "font" },
+  color: { title: "Farver uden for paletten", mode: "color" },
+  off: { title: "Uden for sliden", mode: "layout" },
+  empty: { title: "Tomme pladsholdere", mode: "rens" },
+  title: { title: "Overskrift er ikke 25 pt", mode: "size" },
+  titleLong: { title: "Overskrift over 2 linjer", mode: null },
+  body: { title: "Tekst i bokse er ikke 10 pt", mode: "size" },
+  commentary: { title: "\"Commentary\" uden versaler", mode: "layout" },
+  align: { title: "Tekst i bokse er ikke topjusteret", mode: "layout" },
+  source: { title: "Indholdsslides uden kilde", mode: null },
+  heavy: { title: "Tekst-tunge slides (over 220 ord)", mode: null },
+  guides: { title: "Hjælpegitter ligger stadig på slides", mode: "rens" },
 };
+function fixInLayout(mode) {
+  show("replace");
+  if (mode === "rens") { $("cleanEmpty").scrollIntoView({ block: "center" }); return; }
+  rvMode = mode;
+  rvShowMode();
+  rvRun();
+}
 let issues = null, fonts = [];
 async function runCheck() {
   $("checkRun").disabled = true;
@@ -1006,7 +1046,7 @@ function renderIssues() {
   const total = Object.values(issues).reduce((n, l) => n + l.length, 0);
   $("checkResult").innerHTML = (total ? "" : `<div class="card ok-card"><span class="dot">✓</span><div><b>Alt ser fint ud.</b><div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div></div></div>`) +
     Object.entries(CHECKS).filter(([k]) => issues[k].length).map(([k, c]) => `<div class="card">
-      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b>${c.fix ? `<button class="ghost" data-fix="${k}">${c.fix}</button>` : ""}</div>
+      <div class="issue-head"><b>${c.title}<span class="badge">${issues[k].length}</span></b>${c.mode ? `<button class="ghost" data-fix="${c.mode}">Ret i Kvadrant Layout</button>` : ""}</div>
       <div style="display:grid;gap:6px">${issues[k].slice(0, 40).map((it, i) => `<div class="issue"><span>Slide ${it.slide} · ${esc(it.name)}${it.detail ? " · " + esc(it.detail) : ""}</span><button data-go="${k}:${i}">Gå til</button></div>`).join("")}</div>
       ${issues[k].length > 40 ? `<div class="hint">… og ${issues[k].length - 40} mere</div>` : ""}
       ${k === "font" ? `<div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div>` : ""}
@@ -1347,7 +1387,7 @@ async function snipRemove(id) {
 let rvMode = "text", rv = null;
 // Kvadrant-tjekkets fund, delt op: skrift, størrelse, farve og placering/COMMENTARY hver for sig.
 const RV_CHECK = {
-  font: { kinds: ["font"], hint: "Tekst i en skrift, der ikke er temaets, sættes til temaets skrift (overskrift eller brødtekst)." },
+  font: { kinds: ["font"], hint: "Søg finder tekst i en skrift, der ikke er temaets, og retter den til temaets skrift. Vil du skifte én skrift ud med en anden (fx Aptos Light til Inter Light), så brug oversigten herunder." },
   size: { kinds: ["title", "body"], hint: "Overskrifter, der ikke er 25 pt, og tekst i bokse, der ikke er 10 pt." },
   color: { kinds: ["color"], hint: "Tekst- og fyldfarver uden for temaets palet sættes til den nærmeste temafarve." },
   layout: { kinds: ["commentary", "align", "off"], hint: "COMMENTARY uden versaler, tekst i bokse, der ikke er topjusteret, og figurer uden for sliden." },
@@ -1369,24 +1409,38 @@ function rvExample() {
   $("rvEx1").textContent = o.onlyMoney ? "125000 lades være" : `125000 → ${fmt(125000, curFor(""))}`;
   $("rvEx2").textContent = `125000 DKK → ${fmt(125000, curFor("DKK"))}`;
 }
+const ALL_HINT = "Alt på én gang, slide for slide: tal (med indstillingerne under Tal), skrift, størrelse, farve, placering, COMMENTARY og eyebrow-numre. Brug det som sidste gennemtjek, før du kører Tjek.";
 function rvShowMode() {
   document.querySelectorAll("#rvModes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === rvMode));
   const check = RV_CHECK[rvMode];
   $("rvText").hidden = rvMode !== "text";
   $("rvNumbers").hidden = rvMode !== "numbers";
-  $("rvCheckHint").hidden = !check;
-  if (check) $("rvCheckHint").textContent = check.hint;
+  $("rvCheckHint").hidden = !check && rvMode !== "all";
+  $("rvCheckHint").textContent = rvMode === "all" ? ALL_HINT : check ? check.hint : "";
+  $("rvFonts").hidden = rvMode !== "font";
   $("rvEyebrow").hidden = rvMode !== "eyebrow";
-  $("rvScopeField").hidden = !!check || rvMode === "eyebrow";
+  $("rvScopeField").hidden = !!check || rvMode === "eyebrow" || rvMode === "all";
   $("rvRun").innerHTML = "Søg <kbd>Enter</kbd>";
   if (rvMode === "numbers") rvExample();
 }
-async function rvRun() {
+// "Alt": tal, skrift, størrelse, farve, placering og eyebrows i én gennemgang, sorteret efter slide.
+async function allItems() {
+  const parts = [];
+  $("rvPos").textContent = "Tal …";
+  parts.push(...await call("numberItems", { ...rvNfOpts(), scope: "deck" }));
+  parts.push(...await call("checkItems", Object.values(RV_CHECK).flatMap((c) => c.kinds)));
+  $("rvPos").textContent = "Eyebrows …";
+  parts.push(...await call("eyebrowItems", { names: $("rvNames").checked }).catch(() => []));   // uden sektioner: ingen eyebrows
+  return parts.sort((a, b) => a.slide - b.slide);
+}
+async function rvRun(load) {
   $("rvRun").disabled = true;
   progressHandler = (t) => { $("rvPanel").hidden = false; $("rvPos").textContent = t; };
   try {
     const scope = $("rvScope").value;
-    const items = rvMode === "text" ? await call("findText", { q: $("rvFind").value, repl: $("rvRepl").value, matchCase: $("rvCase").checked, whole: $("rvWhole").checked, scope })
+    const items = typeof load === "function" ? await load()
+      : rvMode === "all" ? await allItems()
+      : rvMode === "text" ? await call("findText", { q: $("rvFind").value, repl: $("rvRepl").value, matchCase: $("rvCase").checked, whole: $("rvWhole").checked, scope })
       : rvMode === "numbers" ? await call("numberItems", { ...rvNfOpts(), scope })
       : RV_CHECK[rvMode] ? await call("checkItems", RV_CHECK[rvMode].kinds)
       : await call("eyebrowItems", { names: $("rvNames").checked });
@@ -1397,6 +1451,27 @@ async function rvRun() {
     document.activeElement?.blur?.();   // så Enter retter og Ctrl+Z fortryder, i stedet for at søge igen
     rvGo(0);
   } catch (e) { $("rvPanel").hidden = true; fail(e); } finally { progressHandler = null; $("rvRun").disabled = false; }
+}
+// Skrifttyper: oversigt over alle brugte skrifter; "Erstat" går tekstfelterne med den skrift igennem ét ad gangen.
+let fontRows = [];
+async function fontScan() {
+  $("fontScan").disabled = true;
+  $("fontList").textContent = "Læser alle tekstfelter …";
+  try {
+    fontRows = await call("fontReport");
+    const names = [...new Set([...(ctx.fonts || []), ...fontRows.map((f) => f.name), "Inter", "Inter Light", "Inter SemiBold", "Aptos", "Aptos Light"])];
+    $("fontNamesList").innerHTML = names.map((n) => `<option value="${esc(n)}">`).join("");
+    const theme = new Set(ctx.fonts || []);
+    $("fontList").innerHTML = fontRows.length ? `<table class="ms"><tr><th>Skrift</th><th class="n">Tekstfelter</th><th>Slides</th><th>Erstat med</th><th></th></tr>${fontRows.map((f, i) =>
+      `<tr><td><b>${esc(f.name)}</b>${theme.has(f.name) ? ' <span class="tag">tema</span>' : ""}</td><td class="n">${f.boxes}</td><td>${esc(slideNos(f.slides))}</td>
+        <td><input class="wide" style="height:28px;min-width:140px" list="fontNamesList" data-fto="${i}" placeholder="fx Inter Light"></td><td><button class="ghost" style="height:28px" data-fswap="${i}">Erstat</button></td></tr>`).join("")}</table>`
+      : "Fandt ingen tekst.";
+  } catch (e) { $("fontList").textContent = ""; fail(e); } finally { $("fontScan").disabled = false; }
+}
+function fontSwap(i) {
+  const from = fontRows[i]?.name, to = document.querySelector(`[data-fto="${i}"]`)?.value.trim();
+  if (!to) { toast("Skriv den skrift, der skal bruges i stedet"); return; }
+  rvRun(() => call("fontSwapItems", { from, to })).then(() => { if (rv?.items.length) toast(`${rv.items.length} tekstfelter med ${from}. Ret alle, eller gå dem igennem.`); });
 }
 function rvRender() {
   const it = rv.items[rv.i], done = rv.done.has(rv.i), left = rv.items.length - rv.done.size;
@@ -1534,10 +1609,14 @@ function gLoad() {
   for (const [id, k] of Object.entries(G_FIELDS)) $(id).value = String(o[k]).replace(".", ",");
   $("gKeep").checked = !!o.keepSize;
 }
-// Indstillingerne gemmes, så genvejene (1 = snap, 2 = vis/skjul) bruger de samme.
-function gOpts() {
+// Indstillingerne gemmes, så genvejene (1 = snap, 2 = vis/skjul) bruger de samme. preset: et af Kvadrants fire layouts
+// (full, two, three, commentary); null = eget gitter. Uden argument beholdes det layout, der sidst blev valgt.
+function gOpts(preset) {
   const o = Object.fromEntries(Object.entries(G_FIELDS).map(([id, k]) => [k, Math.max(0, num($(id).value, G_DEF[k]))]));
   o.cols = Math.max(1, Math.round(o.cols)); o.rows = Math.max(1, Math.round(o.rows)); o.keepSize = $("gKeep").checked;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("kvadrant.guides")) || {}; } catch {}
+  o.preset = preset === undefined ? saved.preset || null : preset;
   try { localStorage.setItem("kvadrant.guides", JSON.stringify(o)); } catch {}
   return { ...o, all: $("gAll").checked };
 }
@@ -1629,11 +1708,18 @@ $("checkRun").addEventListener("click", runCheck);
 $("checkResult").addEventListener("click", (e) => {
   const go = e.target.closest("[data-go]"), fix = e.target.closest("[data-fix]");
   if (go) { const [k, i] = go.dataset.go.split(":"); call("goTo", issues[k][+i]).catch(fail); }
-  if (fix) {
-    const k = fix.dataset.fix;
-    call("fixAll", k, issues[k]).then((n) => { toast(`Rettet ${n}`); issues[k] = []; renderIssues(); }, fail);
-  }
+  if (fix) fixInLayout(fix.dataset.fix);
 });
+// Rens: tomme pladsholdere og hjælpegitter findes med tjekket og slettes med det samme.
+async function cleanKind(btn, kind, label) {
+  await withProgress(btn, async () => {
+    const r = await call("check");
+    const n = r.issues[kind].length ? await call("fixAll", kind, r.issues[kind]) : 0;
+    toast(n ? `${label}: ${n} fjernet` : `${label}: der var ingen`);
+  });
+}
+$("cleanEmpty").addEventListener("click", () => cleanKind("cleanEmpty", "empty", "Tomme pladsholdere"));
+$("cleanGuides").addEventListener("click", () => cleanKind("cleanGuides", "guides", "Hjælpegitter"));
 
 // Billeder & CV
 $("picConnect").addEventListener("click", () => picConnect().catch(fail));
@@ -1670,6 +1756,8 @@ $("rvUndo").addEventListener("click", () => rvUndo());
 $("rvList").addEventListener("click", (e) => { const b = e.target.closest("[data-rv]"); if (b) rvGo(+b.dataset.rv); });
 $("rvListToggle").addEventListener("click", () => { $("rvList").hidden = !$("rvList").hidden; $("rvListToggle").textContent = $("rvList").hidden ? "Vis alle fund" : "Skjul listen"; if (rv) rvRender(); });
 ["rvLang", "rvUnit", "rvDec", "rvCur", "rvAddCur", "rvOnlyMoney"].forEach((id) => $(id).addEventListener("change", rvExample));
+$("fontScan").addEventListener("click", fontScan);
+$("fontList").addEventListener("click", (e) => { const b = e.target.closest("[data-fswap]"); if (b) fontSwap(+b.dataset.fswap); });
 rvShowMode();
 
 // Masters & filstørrelse
@@ -1696,14 +1784,29 @@ $("szShrink").addEventListener("click", () => withProgress("szShrink", async () 
 const runGap = (axis) => call("setGap", { axis, gapCm: num($("gapCm").value, 0.3) }).then((n) => toast(`${n} ${axis === "h" ? "vandret" : "lodret"} med ${$("gapCm").value} cm`), fail);
 $("gapH").addEventListener("click", () => runGap("h"));
 $("gapV").addEventListener("click", () => runGap("v"));
-$("gToggle").addEventListener("click", () => call("guidesToggle", gOpts()).then((r) => toast(r.shown ? "Hjælpegitter vist" : "Hjælpegitter skjult"), fail));
+$("gapBoth").addEventListener("click", () => call("setGap", { axis: "both", gapCm: num($("gapCm").value, 0.3) })
+  .then((n) => toast(`${n} figurer med ${$("gapCm").value} cm vandret og lodret`), fail));
+$("gToggle").addEventListener("click", () => call("guidesToggle", { ...gOpts(null), show: true }).then(() => toast("Eget gitter vist"), fail));
+$("gPresets").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-preset]");
+  if (!b) return;
+  const p = b.dataset.preset;
+  if (p === "off") {
+    document.querySelectorAll("#gPresets [data-preset]").forEach((x) => x.setAttribute("aria-pressed", "false"));
+    call("guidesToggle", { all: $("gAll").checked, hide: true }).then(() => toast("Hjælpegitter skjult"), fail);
+    return;
+  }
+  document.querySelectorAll("#gPresets [data-preset]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  call("guidesToggle", gOpts(p)).then(() => toast(`Hjælpegitter: ${b.textContent}`), fail);
+});
 $("gSnap").addEventListener("click", () => call("snapToGrid", gOpts()).then((n) => toast(`${n} figurer snappet til gitteret`), fail));
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { close(); return; }
   if (current === "replace") {
-    const typing = e.target.matches("input[type=text]");
+    const typing = e.target.matches("input:not([type=checkbox]):not([type=range])");
     if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); rvUndo(); return; }
+    if (e.key === "Enter" && e.target.dataset?.fto) { e.preventDefault(); fontSwap(+e.target.dataset.fto); return; }
     if (e.key === "Enter" && (typing || !rv || $("rvPanel").hidden)) { e.preventDefault(); rvRun(); return; }
     if (e.key === "Enter" && !e.target.matches("button, select")) { e.preventDefault(); rvApply().catch(fail); return; }
     if (e.key === "F3" && rv) { e.preventDefault(); rvGo(rv.i + (e.shiftKey ? -1 : 1)); return; }

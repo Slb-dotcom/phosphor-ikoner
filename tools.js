@@ -3,7 +3,7 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03i";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03j";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
@@ -33,26 +33,38 @@ const titleOf = (texts) => {
 };
 
 // ---------- Agenda ----------
-function agendaScan() {
+// Punkterne er præsentationens sektioner (med slidenes overskrifter under hver, som overblik). Uden sektioner bruges
+// afsnits-slides, og ellers alle slides med en titel.
+const DEFAULT_SECTION = /^(default section|standardsektion|untitled section|sektion uden titel|unavngivet sektion)$/i;
+async function agendaScan() {
+  let secs = [];
+  try { secs = KvPptx.sections(await readXmlParts()); } catch {}
   return run(async (ctx) => {
     const slides = ctx.presentation.slides;
     slides.load("items/id");
     await ctx.sync();
     const tags = slides.items.map((s) => { s.layout.load("name"); const t = s.tags.getItemOrNullObject("KVADRANT"); t.load("value"); return t; });
     await ctx.sync();
-    const found = [];
+    const info = [];
     for (const [i, s] of slides.items.entries()) {
       if (!tags[i].isNullObject && tags[i].value === "agenda") continue;
       const texts = (await slideTexts(ctx, s)).filter((t) => t.text);
       const title = titleOf(texts);
-      if (!title) continue;
       // Afsnits-slide: layout hedder fx "Section Header", eller en kort slide med et nummer som "01".
       const divider = /section|afsnit|divider|sektion|kapitel|chapter|breaker/i.test(s.layout.name) ||
         (texts.length <= 3 && texts.some((t) => /^\d{1,2}$/.test(t.text)));
-      found.push({ id: s.id, index: i, title, on: divider });
+      info[i] = { id: s.id, index: i, title, divider };
     }
-    // Ingen afsnits-slides: vis alle titler, så man selv kan vælge.
-    return found.some((f) => f.on) ? found.filter((f) => f.on) : found;
+    if (secs.length >= 2) {
+      const items = secs.map((sec) => {
+        const own = sec.slides.map((i) => info[i]).filter(Boolean);
+        return own.length && { id: own[0].id, index: own[0].index, title: sec.name, on: !DEFAULT_SECTION.test(sec.name.trim()),
+          slides: own.map((s) => s.title || `Slide ${s.index + 1}`) };
+      }).filter(Boolean);
+      return { mode: "sections", items };
+    }
+    const found = info.filter((f) => f && f.title).map((f) => ({ id: f.id, index: f.index, title: f.title, on: f.divider }));
+    return { mode: "slides", items: found.some((f) => f.on) ? found.filter((f) => f.on) : found };
   });
 }
 
@@ -145,9 +157,24 @@ async function addFromTemplate(ctx, data, items, active, at) {
   let pos = 0;
   out.forEach((l, i) => {
     if (i !== active) range.getSubstring(pos, l.length).font.color = "#A3A1B3";
+    else range.getSubstring(pos, l.length).font.bold = true;
     pos += l.length + 1;
   });
+  // Lyseblå boks bag det aktuelle afsnit (linjerne antages at fylde tekstfeltet jævnt).
+  list.shape.load("left,top,width,height");
   await ctx.sync();
+  const s = list.shape, lineH = s.height / out.length;
+  highlightBox(slide, s.left - 4, s.top + active * lineH, s.width + 8, lineH);
+  s.setZOrder?.("BringToFront");
+  await ctx.sync();
+}
+const AGENDA_BLUE = "#D6E6F5";
+function highlightBox(slide, left, top, width, height) {
+  const b = slide.shapes.addGeometricShape("RoundRectangle", { left, top, width, height });
+  b.name = "Agenda aktuelt afsnit";
+  b.fill.setSolidColor(AGENDA_BLUE);
+  b.lineFormat.visible = false;
+  return b;
 }
 
 async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
@@ -176,6 +203,7 @@ async function addAgendaSlide(ctx, layoutId, slideMasterId, items, active, at) {
   }
   const ink = themeHex("Tekst 1", "27272C"), accent = themeHex("Tekst 2", "262139"), muted = "A3A1B3";
   const top = h * 0.26, rowH = Math.min(44, (h * 0.62) / items.length), size = Math.round(Math.max(11, Math.min(20, rowH * 0.45)));
+  if (active >= 0) highlightBox(slide, left - 8, top + active * rowH + rowH * 0.08, 54 + w * 0.7 + 16, rowH * 0.84);
   items.forEach((it, i) => {
     const on = active < 0 || i === active;
     const rows = [[String(i + 1).padStart(2, "0"), left, 44, on ? accent : muted], [it.title.trim(), left + 54, w * 0.7, on ? ink : muted]];
@@ -201,8 +229,28 @@ const STAMPS = {
   stampSource: { text: "Kilde: ", source: true },
   stampSourceEn: { text: "Source: ", source: true },
 };
+// Status-stempler er et skråt bånd i slidens øverste højre hjørne (Kvadrants stil), lagt ind som et billede.
+const STAMP_PINK = "#D8AECB", STAMP_CM = 3.4;
+function stampSvg(text) {
+  const size = Math.min(17, 150 / (text.length * 0.68));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><polygon points="62,0 122,0 200,78 200,138" fill="${STAMP_PINK}"/>`
+    + `<text x="146" y="54" transform="rotate(45 146 54)" text-anchor="middle" dominant-baseline="central" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700" font-size="${size.toFixed(1)}" letter-spacing="1.2" fill="#262139">${text}</text></svg>`;
+}
 async function addStamp(id) {
   const { text, source } = STAMPS[id];
+  if (!source) {
+    const pt = STAMP_CM * CM, { w } = state.slideSize;
+    await insertSvg(stampSvg(text), { imageLeft: w - pt, imageTop: 0, imageWidth: pt, imageHeight: pt });
+    await run(async (ctx) => {
+      const sel = ctx.presentation.getSelectedShapes();
+      sel.load("items/id");
+      await ctx.sync();
+      const s = sel.items[sel.items.length - 1];
+      if (s) s.name = "Stempel " + text;
+      await ctx.sync();
+    }).catch(() => {});
+    return;
+  }
   await run(async (ctx) => {
     const slide = ctx.presentation.getSelectedSlides().getItemAt(0);
     const { w, h } = state.slideSize;
@@ -1096,10 +1144,12 @@ async function eyebrowItems({ names = true } = {}) {
       const texts = await loadEach(ctx, await textShapesOf(ctx, slide.shapes), (s) => { s.load("id,name,top,height"); s.textFrame.textRange.load("text"); });
       for (const s of texts) {
         const text = (s.textFrame.textRange.text || "").trim();
-        if (!text || text.length > 60 || /title|titel/i.test(s.name) || /[\r\n\v]/.test(text)) continue;
-        const top = s.top < 2.2 * CM && s.height < 1.4 * CM;
+        // Eyebrow'en hedder typisk "Subtitle 2" i markeringsruden (undertitel-pladsholderen over overskriften).
+        const sub = /sub-?title|undertitel|eyebrow/i.test(s.name) && s.top < state.slideSize.h * 0.3;
+        if (!text || text.length > 60 || (/title|titel/i.test(s.name) && !sub) || /[\r\n\v]/.test(text)) continue;
+        const top = sub || (s.top < 2.2 * CM && s.height < 1.4 * CM);
         if (!(top || (divider && /^\d{1,2}$/.test(text)))) continue;
-        found.push({ slideId: slide.id, slide: i + 1, sec: secOf[i], shapeId: s.id, name: s.name, text, raw: s.textFrame.textRange.text });
+        found.push({ slideId: slide.id, slide: i + 1, sec: secOf[i], shapeId: s.id, name: s.name, text, raw: s.textFrame.textRange.text, sub });
       }
     }
     const numbered = [...new Set(found.filter((f) => /^\d{1,2}\b/.test(f.text) && f.sec != null).map((f) => f.sec))].sort((a, b) => a - b);
@@ -1111,7 +1161,8 @@ async function eyebrowItems({ names = true } = {}) {
       const ord = numbered.indexOf(f.sec) + 1;
       let next = n && ord ? String(ord).padStart(n.length, "0") : n || "";
       let tail = rest;
-      if (names && (lower.includes(rest.trim().toLowerCase()) || /^section here$/i.test(rest.trim()))) tail = secs[f.sec].name;
+      // En eyebrow (undertitel) skal vise sektionens navn; andre korte tekster rettes kun, hvis de viser et andet afsnits navn.
+      if (names && !DEFAULT_SECTION.test(secs[f.sec].name.trim()) && (f.sub || lower.includes(rest.trim().toLowerCase()) || /^section here$/i.test(rest.trim()))) tail = secs[f.sec].name;
       const after = (next || "") + (next && tail ? sep || " " : "") + tail;
       if (after === f.text) continue;
       const start = f.raw.indexOf(f.text);
@@ -1119,6 +1170,62 @@ async function eyebrowItems({ names = true } = {}) {
     }
     return out;
   });
+}
+
+// ---------- Skrifttyper i hele præsentationen ----------
+// PowerPoint giver kun ét skriftnavn for et helt tekstfelt, når det er ens; ellers deles teksten op, til hvert stykke har én skrift.
+async function fontSegments(ctx, range, len) {
+  const out = [];
+  let queue = [{ start: 0, len }];
+  while (queue.length) {
+    const subs = queue.map((q) => { const r = range.getSubstring(q.start, q.len); r.font.load("name"); return [q, r]; });
+    await ctx.sync();
+    queue = [];
+    for (const [q, r] of subs) {
+      if (r.font.name || q.len <= 1) out.push({ ...q, name: r.font.name || "" });
+      else { const h = Math.floor(q.len / 2); queue.push({ start: q.start, len: h }, { start: q.start + h, len: q.len - h }); }
+    }
+  }
+  out.sort((a, b) => a.start - b.start);
+  return out.reduce((m, s) => { const p = m[m.length - 1]; if (p && p.name === s.name && p.start + p.len === s.start) p.len += s.len; else m.push({ ...s }); return m; }, []);
+}
+// Alle tekstfelter med deres skrifter: [{ t (som textItems), segs: [{ start, len, name }] }]
+async function fontMap(ctx) {
+  const items = await textItems(ctx, "deck");
+  const out = [];
+  for (const t of items) {
+    if (!t.text.trim()) continue;
+    const s = await findShape(ctx, t.slideId, t.shapeId);
+    const r = s.textFrame.textRange;
+    r.font.load("name");
+    await ctx.sync();
+    out.push({ t, segs: r.font.name ? [{ start: 0, len: t.text.length, name: r.font.name }] : await fontSegments(ctx, r, t.text.length) });
+  }
+  return out;
+}
+// Oversigt: [{ name, boxes, slides: [nr, ...] }], mest brugte først.
+async function fontReport() {
+  return run(async (ctx) => {
+    const by = {};
+    for (const { t, segs } of await fontMap(ctx)) {
+      for (const name of new Set(segs.filter((s) => t.text.substr(s.start, s.len).trim()).map((s) => s.name || "(ukendt)"))) {
+        const f = (by[name] ||= { name, boxes: 0, slides: new Set() });
+        f.boxes++; f.slides.add(t.slide);
+      }
+    }
+    return Object.values(by).map((f) => ({ ...f, slides: [...f.slides].sort((a, b) => a - b) })).sort((a, b) => b.boxes - a.boxes);
+  });
+}
+// Forslag om at skifte én skrift ud med en anden, ét tekstfelt ad gangen.
+async function fontSwapItems({ from, to }) {
+  if (!from || !to) throw new Error("Vælg skriften, og skriv den nye");
+  return run(async (ctx) => (await fontMap(ctx)).flatMap(({ t, segs }) => {
+    const hit = segs.filter((s) => s.name === from);
+    if (!hit.length) return [];
+    const first = hit[0];
+    return [{ kind: "fontswap", slideId: t.slideId, slide: t.slide, shapeId: t.shapeId, name: t.name, segs: hit.map(({ start, len }) => ({ start, len })),
+      start: first.start, before: from, after: to, label: "Skrift", ...around(t.text, first.start, Math.min(first.len, 60)) }];
+  }));
 }
 
 // Går til fundet i PowerPoint og sender et billede af sliden med figurens placering tilbage, så vinduet kan vise, hvor det er.
@@ -1163,6 +1270,11 @@ async function reviewApply(it) {
       else r.getSubstring(at, 0).text = it.after;
       await ctx.sync();
       return { ...it, start: at, before: it.after, after: it.before };
+    }
+    if (it.kind === "fontswap") {
+      for (const s of it.segs) r.getSubstring(s.start, s.len).font.name = it.after;
+      await ctx.sync();
+      return { ...it, before: it.after, after: it.before };
     }
     if (it.kind === "fix") {
       const f = it.fix;
@@ -1215,13 +1327,30 @@ function guideOpts(o) {
   try { saved = JSON.parse(localStorage.getItem("kvadrant.guides")) || {}; } catch {}
   return { ...GUIDE_DEFAULT, ...saved, ...(o || {}) };
 }
+// widths: kolonnernes forhold, fx [3, 1] for indhold + COMMENTARY; uden widths er alle kolonner lige brede.
 function guideGeometry(o) {
   const { w, h } = state.slideSize, g = o.gutter * CM;
   const L = o.l * CM, T = o.t * CM, W = w - L - o.r * CM, H = h - T - o.b * CM;
-  const cw = (W - (o.cols - 1) * g) / o.cols, rh = (H - (o.rows - 1) * g) / o.rows;
-  const cols = Array.from({ length: o.cols }, (_, i) => ({ a: L + i * (cw + g), b: L + i * (cw + g) + cw }));
+  const widths = o.widths?.length ? o.widths : Array(o.cols).fill(1), total = widths.reduce((a, b) => a + b, 0);
+  const free = W - (widths.length - 1) * g, rh = (H - (o.rows - 1) * g) / o.rows;
+  let x = L;
+  const cols = widths.map((f) => { const c = { a: x, b: x + (free * f) / total }; x = c.b + g; return c; });
   const rows = Array.from({ length: o.rows }, (_, j) => ({ a: T + j * (rh + g), b: T + j * (rh + g) + rh }));
   return { L, T, W, H, cols, rows };
+}
+// Kvadrants fire typiske slide-layouts. Margenerne tages fra overskriften på sliden (dens venstre og højre kant),
+// og indholdet starter lige under den og slutter over kildelinjen.
+const GUIDE_PRESETS = { full: [1], two: [1, 1], three: [1, 1, 1], commentary: [3, 1] };
+async function slideGuideOpts(ctx, slide, o) {
+  if (!GUIDE_PRESETS[o.preset]) return o;
+  slide.shapes.load("items/name,items/left,items/top,items/width,items/height");
+  await ctx.sync();
+  const { w, h } = state.slideSize;
+  const title = slide.shapes.items.find((s) => /title|titel/i.test(s.name) && !/sub/i.test(s.name) && s.top < h / 2);
+  const widths = GUIDE_PRESETS[o.preset];
+  return { ...o, cols: widths.length, rows: 1, widths,
+    l: title ? title.left / CM : o.l, r: title ? Math.max(0, (w - title.left - title.width) / CM) : o.r,
+    t: title ? (title.top + title.height) / CM + 0.4 : o.t, b: 1.5 };
 }
 async function removeGuides(ctx, slides) {
   let n = 0;
@@ -1235,25 +1364,31 @@ async function removeGuides(ctx, slides) {
 }
 async function guidesToggle(o = {}) {
   await ensureTheme();
+  // Vælger man et layout (eller "vis"), erstattes det gitter, der ligger; ellers slår knappen (genvej 2) gitteret til og fra.
+  const pick = !!(o.preset || o.show);
   o = guideOpts(o);
   return run(async (ctx) => {
     const scope = o.all ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
     scope.load("items/id");
     await ctx.sync();
-    if (!o.show && (await removeGuides(ctx, scope.items))) return { shown: false };
-    const { L, T, W, H, cols, rows } = guideGeometry(o);
+    const had = await removeGuides(ctx, scope.items);
+    if (o.hide || (had && !pick)) return { shown: false };
     const PINK = "#FF2E93";
     for (const slide of scope.items) {
+      const { L, T, W, H, cols, rows } = guideGeometry(await slideGuideOpts(ctx, slide, o));
       const made = [];
+      // Kun streger, intet fyld: så kan man klikke på figurerne inde i kolonnerne uden at ramme gitteret.
       const add = (left, top, width, height, frame) => {
         const s = slide.shapes.addGeometricShape(PowerPoint.GeometricShapeType.rectangle, { left, top, width, height });
         s.name = GUIDE;
-        if (frame) { s.fill.clear(); s.lineFormat.color = PINK; s.lineFormat.weight = 0.75; s.lineFormat.dashStyle = "Dash"; }
-        else { s.fill.setSolidColor(PINK); s.fill.transparency = 0.9; s.lineFormat.visible = false; }
+        s.fill.clear();
+        s.lineFormat.color = PINK;
+        s.lineFormat.weight = frame ? 0.5 : 0.75;
+        if (frame) s.lineFormat.dashStyle = "Dash";
         made.push(s);
       };
       cols.forEach((c) => add(c.a, T, c.b - c.a, H));
-      if (o.rows > 1) rows.forEach((r) => add(L, r.a, W, r.b - r.a));
+      if (rows.length > 1) rows.forEach((r) => add(L, r.a, W, r.b - r.a));
       add(L, T, W, H, true);
       made.forEach((s) => s.load("id"));
       await ctx.sync();
@@ -1271,9 +1406,11 @@ async function guidesToggle(o = {}) {
 async function snapToGrid(o = {}) {
   await ensureTheme();
   o = guideOpts(o);
-  const { cols, rows } = guideGeometry(o);
   const near = (v, list) => list.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
   return run(async (ctx) => {
+    const slide = ctx.presentation.getSelectedSlides().getItemAt(0);
+    o = await slideGuideOpts(ctx, slide, o);
+    const { cols, rows } = guideGeometry(o);
     const sel = ctx.presentation.getSelectedShapes();
     sel.load("items/id,items/type,items/name,items/left,items/top,items/width,items/height");
     await ctx.sync();
@@ -1314,17 +1451,41 @@ async function topUnits(ctx, shapes) {
     return [...units.values()];
   } catch { return shapes; }
 }
+// axis "h"/"v": én række eller kolonne. axis "both": figurerne deles i kolonner (dem, der overlapper vandret); kolonnerne
+// får afstanden mellem sig, og figurerne i hver kolonne får samme afstand lodret. Den første (øverst til venstre) bliver stående.
+function spaceAlong(boxes, pos, size, gap) {
+  boxes.sort((a, b) => a[pos] - b[pos]);
+  let at = boxes[0][pos] + boxes[0][size];
+  for (const b of boxes.slice(1)) { b[pos] = at + gap; at += gap + b[size]; }
+}
+function spaceBoth(boxes, gap) {
+  const cols = [];
+  for (const b of [...boxes].sort((x, y) => x.left - y.left)) {
+    const c = cols.find((k) => b.left < k.right - 1 && b.left + b.width > k.left + 1);
+    if (c) { c.items.push(b); c.left = Math.min(c.left, b.left); c.right = Math.max(c.right, b.left + b.width); }
+    else cols.push({ left: b.left, right: b.left + b.width, items: [b] });
+  }
+  cols.sort((a, b) => a.left - b.left);
+  let at = cols[0].right;
+  for (const c of cols.slice(1)) {
+    const dx = at + gap - c.left;
+    c.items.forEach((b) => { b.left += dx; });
+    at = c.right + dx;
+  }
+  for (const c of cols) if (c.items.length > 1) spaceAlong(c.items, "top", "height", gap);
+}
 async function setGap({ axis = "h", gapCm = 0.3 }) {
-  const gap = gapCm * CM, pos = axis === "h" ? "left" : "top", size = axis === "h" ? "width" : "height";
+  const gap = gapCm * CM;
   return run(async (ctx) => {
     const sel = ctx.presentation.getSelectedShapes();
     sel.load("items/id,items/left,items/top,items/width,items/height");
     await ctx.sync();
     const units = await topUnits(ctx, sel.items);
     if (units.length < 2) throw new Error("Markér mindst to figurer eller grupper");
-    units.sort((a, b) => a[pos] - b[pos]);
-    let at = units[0][pos] + units[0][size];
-    for (const u of units.slice(1)) { u[pos] = at + gap; at += gap + u[size]; }
+    const boxes = units.map((u) => ({ u, left: u.left, top: u.top, width: u.width, height: u.height }));
+    if (axis === "both") spaceBoth(boxes, gap);
+    else spaceAlong(boxes, axis === "h" ? "left" : "top", axis === "h" ? "width" : "height", gap);
+    for (const b of boxes) { if (Math.abs(b.u.left - b.left) > 0.01) b.u.left = b.left; if (Math.abs(b.u.top - b.top) > 0.01) b.u.top = b.top; }
     await ctx.sync();
     return units.length;
   });
@@ -1539,7 +1700,7 @@ const OPS = {
   bankStatus, bankSync: (progress) => bankSync(progress), bankAdd, bankFlush: (progress) => bankFlush(progress),
   formatNumbers, fixFonts, themeFonts, cleanCopy: (progress) => cleanCopy(progress),
   formatCharts: (opts, progress) => formatCharts(opts, progress),
-  findText, numberItems, checkItems: (kinds, progress) => checkItems(progress, kinds), eyebrowItems, reviewGo, reviewApply,
+  findText, numberItems, checkItems: (kinds, progress) => checkItems(progress, kinds), eyebrowItems, reviewGo, reviewApply, fontReport, fontSwapItems,
   guidesToggle, snapToGrid, setGap,
   insertPicture, snippetCapture, snippetInsert,
   mastersReport, elixirrCopy, sizeReport, shrinkCopy,
@@ -1589,7 +1750,7 @@ function openDialog(page, view, size) {
 }
 
 const TOOLS_SIZE = { width: 96, height: 94 };   // næsten fuld skærm; Esc lukker
-const SMALL_SIZE = { width: 22, height: 40 };
+const SMALL_SIZE = { width: 16, height: 20 };   // Harvey "Andet": kun et lille talfelt
 const toolsView = (view) => openDialog("tools.html", view, view === "harvey" ? SMALL_SIZE : TOOLS_SIZE);
 function showBar() {
   if (dialog) { closeDialog(); return Promise.resolve(); }   // Ctrl+Shift+K igen lukker
@@ -1613,6 +1774,7 @@ const TOOL_COMMANDS = {
   toggleGuides: cmd(() => guidesToggle().then((r) => toast(r.shown ? "Hjælpegitter vist" : "Hjælpegitter skjult"))),
   snapGrid: cmd(() => snapToGrid().then((n) => toast(`${n} figurer snappet til gitteret`))),
   ...Object.fromEntries(Object.keys(STAMPS).map((id) => [id, cmd(() => addStamp(id))])),
+  ...Object.fromEntries(Object.keys(BOXES).map((id) => [id, cmd(() => addBox(id))])),
   ...Object.fromEntries([0, 25, 50, 75, 100].map((p) => ["harvey" + p, cmd(() => addHarvey(p))])),
 };
 
