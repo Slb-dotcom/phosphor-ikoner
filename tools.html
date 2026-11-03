@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <title>Kvadrant-værktøjer</title>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" onload="this.rel='stylesheet'">
-<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
   :root {
     --ink: #262139; --text: #27272C; --muted: #6E6C80; --line: #E0E3EC; --bg: #F4F5F8; --surface: #fff;
@@ -330,8 +329,10 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add
 // ---------- Forbindelse til PowerPoint (via panelets runtime) ----------
 let ready = false, seq = 0;
 const pending = {};
-function call(op, ...args) {
-  if (!ready) return Promise.reject(new Error("Åbn vinduet fra PowerPoint"));
+let markReady;
+const readyPromise = new Promise((res) => { markReady = res; });
+async function call(op, ...args) {
+  if (!ready && !(await readyPromise)) throw new Error("Åbn vinduet fra PowerPoint");
   return new Promise((res, rej) => {
     const id = ++seq;
     pending[id] = { res, rej };
@@ -397,7 +398,7 @@ function fireKey(k) {
   b?.classList.add("flash");
   setTimeout(() => b?.classList.remove("flash"), 150);
   if (hit.cmd.startsWith("view:")) { const v = hit.cmd.slice(5); document.body.classList.remove("compact"); show(v); return; }
-  if (ready) Office.context.ui.messageParent(JSON.stringify({ cmd: hit.cmd, keep: hit.keep }));
+  readyPromise.then((ok) => { if (ok) Office.context.ui.messageParent(JSON.stringify({ cmd: hit.cmd, keep: hit.keep })); });
 }
 $("keyList").addEventListener("click", (e) => { const b = e.target.closest(".key"); if (b) fireKey(b.dataset.k); });
 
@@ -464,6 +465,8 @@ async function insertHarvey() {
 }
 
 // ---------- Bibliotek ----------
+let libCache = null;
+const dbGetAllCached = async (fresh) => (fresh || !libCache ? (libCache = await dbGetAll()) : libCache);
 function dbGetAll() {
   return new Promise((res) => {
     const r = indexedDB.open("kvadrant", 1);
@@ -695,9 +698,9 @@ async function loadBank() {
   renderLibrary();
 }
 let libItems = {};
-async function renderLibrary() {
+async function renderLibrary(fromSearch = false) {
   const q = $("libSearch").value.trim().toLowerCase();
-  const all = (await dbGetAll()).filter((it) => !it.id.startsWith("_") && it.source !== "pending");
+  const all = (await dbGetAllCached(!fromSearch)).filter((it) => !it.id.startsWith("_") && it.source !== "pending");
   const hit = (it) => !q || [it.title, it.desc, it.code, it.source].join(" ").toLowerCase().includes(q);
   libItems = Object.fromEntries(all.map((it) => [it.id, it]));
   const bankSource = folderMode ? "folder" : "bank";
@@ -822,7 +825,8 @@ $("pctRange").addEventListener("input", (e) => { $("pct").value = e.target.value
 $("hvColors").addEventListener("click", (e) => { const s = e.target.closest("[data-hex]"); if (s) { hvHex = s.dataset.hex; renderHarvey(); } });
 $("harveyInsert").addEventListener("click", insertHarvey);
 
-$("libSearch").addEventListener("input", renderLibrary);
+let searchTimer;
+$("libSearch").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => renderLibrary(true), 120); });
 $("bankPractices").addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) { fPractice = b.dataset.p; loadBank(); } });
 $("bankSteps").addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { fStep = b.dataset.s; loadBank(); } });
 $("bankAdd").addEventListener("click", bankAdd);
@@ -886,14 +890,20 @@ document.body.classList.toggle("compact", start === "harvey");
 renderHarvey();
 show(start);
 
-if (window.Office) Office.onReady(async () => {
-  if (!Office.context.ui?.messageParent) return;   // åbnet direkte i en browser
+// Office.js hentes først nu, så vinduet vises med det samme; taster trykket inden da sendes, når forbindelsen er klar.
+const office = document.createElement("script");
+office.src = "https://appsforoffice.microsoft.com/lib/1/hosted/office.js";
+office.onload = () => Office.onReady(async () => {
+  if (!Office.context.ui?.messageParent) { markReady(false); return; }   // åbnet direkte i en browser
   ready = true;
   Office.context.ui.addHandlerAsync(Office.EventType.DialogParentMessageReceived, onParent);
+  markReady(true);
   try { ctx = await call("context"); } catch {}
   renderHarvey();
   if (current === "agenda") agendaScan();
 });
+office.onerror = () => markReady(false);
+document.head.appendChild(office);
 </script>
 </body>
 </html>

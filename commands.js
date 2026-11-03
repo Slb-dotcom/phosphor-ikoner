@@ -2,6 +2,14 @@
 // Alle arbejder på de markerede figurer via PowerPoint JavaScript API (PowerPointApi 1.5+).
 // Filen indlæses af index.html (delt runtime), så alt ligger i en funktion for ikke at støde sammen med panelets navne.
 (() => {
+// fflate (zip) hentes først, når en funktion skal bruge den, så panel og vinduer starter hurtigere.
+let fflatePromise;
+window.kvLoadFflate = () => (fflatePromise ||= window.fflate ? Promise.resolve() : new Promise((res, rej) => {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
+  s.onload = res; s.onerror = () => rej(new Error("Kunne ikke hente zip-biblioteket"));
+  document.head.appendChild(s);
+}));
 
 const STEP = 0.1 * 28.3465;   // 0,1 cm i punkter, bruges af "Øg/Mindsk afstand"
 const FONT_SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 54, 60, 66, 72, 80, 88, 96];
@@ -78,6 +86,7 @@ async function getSlideSize() {
     const bytes = new Uint8Array(slices.reduce((n, s) => n + s.length, 0));
     let o = 0;
     for (const s of slices) { bytes.set(s, o); o += s.length; }
+    await window.kvLoadFflate();
     const files = fflate.unzipSync(bytes, { filter: (f) => f.name === "ppt/presentation.xml" });
     const sz = new DOMParser().parseFromString(fflate.strFromU8(files["ppt/presentation.xml"]), "application/xml")
       .getElementsByTagName("p:sldSz")[0];
@@ -282,6 +291,14 @@ const COMMANDS = {
 };
 
 Office.onReady(() => {
+// fflate (zip) hentes først, når en funktion skal bruge den, så panel og vinduer starter hurtigere.
+let fflatePromise;
+window.kvLoadFflate = () => (fflatePromise ||= window.fflate ? Promise.resolve() : new Promise((res, rej) => {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
+  s.onload = res; s.onerror = () => rej(new Error("Kunne ikke hente zip-biblioteket"));
+  document.head.appendChild(s);
+}));
   for (const [name, fn] of Object.entries(COMMANDS)) {
     window[name] = fn;
     Office.actions?.associate?.(name, fn);

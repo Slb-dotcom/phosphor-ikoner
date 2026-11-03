@@ -3,22 +3,29 @@
 // Vinduerne har ingen PowerPoint-API, så de sender { id, op, args } hertil og får { id, ok, result | error } tilbage.
 (() => {
 const run = (fn) => PowerPoint.run(fn);
-const TOOLS_BUILD = "2026-11-03c";   // skift ved hver upload af tools.html
+const TOOLS_BUILD = "2026-11-03d";   // skift ved hver upload af tools.html
 const TEXTY = ["GeometricShape", "TextBox", "Placeholder"];
 const CM = 28.3465;
 const themeHex = (name, fallback) => state.theme.find((c) => c.name === name)?.hex || fallback;
 
 // Tekst i figurerne på en slide: [{ shape, text }]
+// Alt læses i én forespørgsel; kun hvis en figur driller (fx billed-pladsholder), læses figurerne én ad gangen.
 async function slideTexts(ctx, slide) {
   slide.shapes.load("items/id,items/name,items/type");
   await ctx.sync();
-  const out = [];
-  for (const s of slide.shapes.items.filter((x) => TEXTY.includes(x.type))) {
-    const r = s.textFrame.textRange;
-    r.load("text");
-    try { await ctx.sync(); out.push({ shape: s, text: r.text.trim() }); } catch { /* figuren har ingen tekst */ }
+  const shapes = slide.shapes.items.filter((x) => TEXTY.includes(x.type));
+  const ranges = shapes.map((s) => s.textFrame.textRange.load("text"));
+  try {
+    await ctx.sync();
+    return shapes.map((s, i) => ({ shape: s, text: ranges[i].text.trim() }));
+  } catch {
+    const out = [];
+    for (const s of shapes) {
+      const r = s.textFrame.textRange.load("text");
+      try { await ctx.sync(); out.push({ shape: s, text: r.text.trim() }); } catch { /* figuren har ingen tekst */ }
+    }
+    return out;
   }
-  return out;
 }
 const titleOf = (texts) => {
   const real = texts.filter((t) => t.text && !/^\d{1,2}$/.test(t.text));
@@ -354,13 +361,22 @@ async function runCheck(progress) {
         if (s.left < -2 || s.top < -2 || s.left + s.width > w + 2 || s.top + s.height > h + 2) issues.off.push({ ...base(s), detail: "" });
       }
       let words = 0, hasSource = false, hasTitle = false;
-      for (const s of slide.shapes.items.filter((x) => TEXTY.includes(x.type))) {
-        const r = s.textFrame.textRange;
-        r.load("text,font/name,font/color,font/size");
+      // Hele slidens tekst og fyld i én forespørgsel; driller en figur, læses figurerne én ad gangen.
+      const texty = slide.shapes.items.filter((x) => TEXTY.includes(x.type));
+      const queue = (s) => {
+        s.textFrame.textRange.load("text,font/name,font/color,font/size");
         s.textFrame.load("verticalAlignment");
+        if (s.type === "GeometricShape") s.fill.load("type,foregroundColor");
+      };
+      texty.forEach(queue);
+      let readable = texty;
+      try { await ctx.sync(); } catch {
+        readable = [];
+        for (const s of texty) { queue(s); try { await ctx.sync(); readable.push(s); } catch {} }
+      }
+      for (const s of readable) {
+        const r = s.textFrame.textRange;
         const fill = s.type === "GeometricShape" ? s.fill : null;
-        fill?.load("type,foregroundColor");
-        try { await ctx.sync(); } catch { continue; }
         const text = r.text.trim(), size = r.font.size, isTitle = /title|titel/i.test(s.name);
         if (!text) { if (s.type === "Placeholder") issues.empty.push({ ...base(s), detail: "" }); }
         else {
@@ -734,6 +750,7 @@ async function readFileBytes() {
   return bytes;
 }
 async function cleanCopy(progress) {
+  await window.kvLoadFflate();
   progress("Læser præsentationen …");
   const files = fflate.unzipSync(await readFileBytes());
   const str = (k) => fflate.strFromU8(files[k]), put = (k, s) => { files[k] = fflate.strToU8(s); };
@@ -852,6 +869,7 @@ const b64ToBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 const bytesToB64 = (bytes) => { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
 
 async function formatCharts(opts, progress) {
+  await window.kvLoadFflate();
   const ids = await run(async (ctx) => {
     const coll = opts.all ? ctx.presentation.slides : ctx.presentation.getSelectedSlides();
     coll.load("items/id");
