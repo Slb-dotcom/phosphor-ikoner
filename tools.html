@@ -136,6 +136,46 @@
   .ok-card { display: flex; gap: 10px; align-items: center; }
   .ok-card .dot { width: 28px; height: 28px; border-radius: 50%; background: #D2E6DC; display: grid; place-items: center; color: var(--ink); font-weight: 700; }
 
+  /* Billeder & CV, Figurer */
+  .wide { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; background: var(--surface); outline: none; }
+  .wide:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--yellow-soft); }
+  .pic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .pic { position: relative; border: 0; padding: 0; background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; text-align: left; }
+  .pic:hover { box-shadow: inset 0 0 0 2px var(--ink), var(--shadow); }
+  .pic .im { width: 100%; aspect-ratio: 1; background: var(--soft) center / cover no-repeat; }
+  .pic.wide-im .im { aspect-ratio: 16 / 9; background-size: contain; background-color: #fff; }
+  .pic .t { padding: 4px 6px 5px; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pic .t small { display: block; color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+  .pic .x { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(38,33,57,.8); color: #fff; font-size: 13px; line-height: 22px; text-align: center; display: none; }
+  .pic:hover .x { display: block; }
+  .cv-list { display: grid; gap: 6px; }
+  .cv { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .cv .who { flex: 1; min-width: 0; }
+  .cv .who b { color: var(--ink); }
+  .cv .who div { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px; background: var(--soft); color: var(--ink); margin-left: 6px; }
+  .tag.old { background: #F3E3E6; }
+
+  /* Søg & ret */
+  .rv-item { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+  .rv-item .where { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .rv-item del { background: #F6D5DB; color: #6B1F2E; text-decoration: line-through; padding: 0 2px; border-radius: 3px; }
+  .rv-item ins { background: var(--yellow-soft); color: var(--ink); text-decoration: none; font-weight: 600; padding: 0 2px; border-radius: 3px; }
+  .rv-list { display: grid; gap: 2px; max-height: 300px; overflow-y: auto; scrollbar-width: thin; }
+  .rv-row { display: flex; gap: 8px; align-items: baseline; font-size: 12px; padding: 4px 8px; border-radius: 5px; border: 0; background: none; text-align: left; width: 100%; }
+  .rv-row:hover { background: var(--bg); }
+  .rv-row[aria-current="true"] { background: var(--soft); font-weight: 600; }
+  .rv-row .no { flex: none; width: 54px; color: var(--muted); }
+  .rv-row span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rv-row.done { color: var(--muted); }
+  .rv-row.done .no::after { content: " ✓"; color: #2E7D57; }
+
+  /* Masters */
+  .ms { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ms th { text-align: left; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 4px 8px; }
+  .ms td { padding: 6px 8px; border-top: 1px solid var(--line); }
+  .ms td.n { text-align: right; font-variant-numeric: tabular-nums; }
+
   .toast {
     position: fixed; left: 50%; bottom: 18px; translate: -50% 12px; opacity: 0; max-width: 90%;
     background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 999px; font-size: 12.5px;
@@ -156,6 +196,8 @@
   <div class="grp">Byg</div>
   <button data-view="agenda"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H104a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM104,72H216a8,8,0,0,0,0-16H104a8,8,0,0,0,0,16ZM216,184H104a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM43.58,55.16,48,52.94V104a8,8,0,0,0,16,0V40a8,8,0,0,0-11.58-7.16l-16,8a8,8,0,0,0,7.16,14.32ZM79.77,156.72a23.73,23.73,0,0,0-9.6-15.95,24.86,24.86,0,0,0-34.11,4.7,23.63,23.63,0,0,0-3.57,6.46,8,8,0,1,0,15,5.47,7.84,7.84,0,0,1,1.18-2.13,8.76,8.76,0,0,1,12-1.59A7.91,7.91,0,0,1,63.93,159a7.64,7.64,0,0,1-1.57,5.78,1,1,0,0,0-.08.11L33.59,203.21A8,8,0,0,0,40,216H72a8,8,0,0,0,0-16H56l19.08-25.53A23.47,23.47,0,0,0,79.77,156.72Z"/></svg>Agenda</button>
   <button data-view="library"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M231.65,194.55,198.46,36.75a16,16,0,0,0-19-12.39L132.65,34.42a16.08,16.08,0,0,0-12.3,19l33.19,157.8A16,16,0,0,0,169.16,224a16.25,16.25,0,0,0,3.38-.36l46.81-10.06A16.09,16.09,0,0,0,231.65,194.55ZM136,50.15c0-.06,0-.09,0-.09l46.8-10,3.33,15.87L139.33,66Zm6.62,31.47,46.82-10.05,3.34,15.9L146,97.53Zm6.64,31.57,46.82-10.06,13.3,63.24-46.82,10.06ZM216,197.94l-46.8,10-3.33-15.87L212.67,182,216,197.85C216,197.91,216,197.94,216,197.94ZM104,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V48A16,16,0,0,0,104,32ZM56,48h48V64H56Zm0,32h48v96H56Zm48,128H56V192h48v16Z"/></svg>Slidebank</button>
+  <button data-view="pictures"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/></svg>Billeder & CV</button>
+  <button data-view="snippets"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M71.59,61.47a8,8,0,0,0-15.18,0l-40,120A8,8,0,0,0,24,192h80a8,8,0,0,0,7.59-10.53ZM35.1,176,64,89.3,92.9,176ZM208,76a52,52,0,1,0-52,52A52.06,52.06,0,0,0,208,76Zm-88,0a36,36,0,1,1,36,36A36,36,0,0,1,120,76Zm104,68H136a8,8,0,0,0-8,8v56a8,8,0,0,0,8,8h88a8,8,0,0,0,8-8V152A8,8,0,0,0,224,144Zm-8,56H144V160h72Z"/></svg>Figurer</button>
   <div class="grp">Layout</div>
   <button data-view="grid"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"/></svg>Gitter</button>
   <button data-view="stamps"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.57-1.47-7.63-5.37-11.57-9.14C146.27,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.57-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.73,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.14-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.14,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.14,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.14,214.31,142.11Z"/></svg>Stempler</button>
@@ -163,7 +205,9 @@
   <button data-view="charts"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>Grafer</button>
   <button data-view="numbers"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,88H175.4l8.47-46.57a8,8,0,0,0-15.74-2.86l-9,49.43H111.4l8.47-46.57a8,8,0,0,0-15.74-2.86L95.14,88H48a8,8,0,0,0,0,16H92.23L83.5,152H32a8,8,0,0,0,0,16H80.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,80,224a8,8,0,0,0,7.86-6.57l9-49.43H144.6l-8.47,46.57a8,8,0,0,0,6.44,9.3A7.79,7.79,0,0,0,144,224a8,8,0,0,0,7.86-6.57l9-49.43H208a8,8,0,0,0,0-16H163.77l8.73-48H224a8,8,0,0,0,0-16Zm-76.5,64H99.77l8.73-48h47.73Z"/></svg>Talformat</button>
   <div class="grp">Kvalitet</div>
+  <button data-view="replace"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>Søg & ret</button>
   <button data-view="check"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></svg>Tjek & rens</button>
+  <button data-view="masters"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></svg>Masters & størrelse</button>
 </aside>
 
 <main>
@@ -201,6 +245,114 @@
       </div>
       <label class="check"><input type="checkbox" id="gridSame"> Gør dem lige store</label>
       <div class="row"><button class="primary" id="gridRun">Stil i gitter <kbd>Enter</kbd></button></div>
+    </div>
+    <div class="card">
+      <span class="label">Præcis afstand</span>
+      <div class="row">
+        <label class="field">Afstand <input type="text" id="gapCm" value="0,3"> cm</label>
+        <button class="ghost" id="gapH">Vandret</button><button class="ghost" id="gapV">Lodret</button>
+      </div>
+      <div class="hint">Den første figur bliver stående, og resten stilles med præcis denne afstand. Grupper flyttes samlet. Markerer du figurer inde i én gruppe, flyttes de inde i gruppen.</div>
+    </div>
+    <div class="card">
+      <span class="label">Hjælpegitter</span>
+      <div class="row">
+        <label class="field">Kolonner <input type="text" id="gCols"></label>
+        <label class="field">Rækker <input type="text" id="gRows"></label>
+        <label class="field">Mellemrum <input type="text" id="gGutter"> cm</label>
+      </div>
+      <div class="row">
+        <label class="field">Margin venstre <input type="text" id="gL"></label>
+        <label class="field">højre <input type="text" id="gR"></label>
+        <label class="field">top <input type="text" id="gT"></label>
+        <label class="field">bund <input type="text" id="gB"> cm</label>
+      </div>
+      <label class="check"><input type="checkbox" id="gAll"> På alle slides (ellers de markerede)</label>
+      <label class="check"><input type="checkbox" id="gKeep"> Snap flytter kun (behold størrelsen)</label>
+      <div class="row"><button class="primary" id="gToggle">Vis / skjul gitter</button><button class="ghost" id="gSnap">Snap markerede til gitteret</button></div>
+      <div class="hint">PowerPoint lader ikke tilføjelser styre de rigtige hjælpelinjer. Gitteret tegnes derfor som gennemsigtige felter bagerst på sliden (de hedder KV-gitter). Snap lægger figurernes kanter på kolonner og rækker, også på tværs af mellemrummene. Skjul gitteret, før du sender. Kvadrant-tjek finder det, hvis det er glemt. I Genveje-baren er 1 = snap og 2 = vis/skjul.</div>
+    </div>
+  </section>
+
+  <section id="pictures">
+    <div><h1>Billeder & CV</h1><p class="lead">Godkendte billeder fra Kvadrants billedbank (portrætter, kontor, miljø, royalty free) og CV'er fra Kvadrant CVs.pptx. Søg på en persons navn for at finde både portrættet og CV'et.</p></div>
+    <div class="card">
+      <div class="row"><span class="hint" id="picStatus">Henter billedbanken …</span><span class="spacer"></span>
+        <button class="primary" id="picPick" hidden>Forbind til billedbanken</button><button class="ghost" id="picRescan" hidden>Opdatér</button></div>
+      <div class="row"><span class="hint" id="cvStatus"></span><span class="spacer"></span><button class="ghost" id="cvPick">Vælg CV-filen</button></div>
+      <div class="search">
+        <svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
+        <input id="picSearch" type="text" placeholder="Søg på en kollegas for- eller efternavn, eller på mappe, fx office" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="chips small" id="picCats"></div>
+      <div class="hint">Billeder skaleres til højst 150 dpi ved fuld slidebredde, før de sættes ind, så filen ikke vokser. Er én figur markeret, lægges billedet inden i den.</div>
+    </div>
+    <div id="cvBlock" hidden><div class="row" style="margin-bottom:6px"><span class="label">CV'er</span><span class="spacer"></span><label class="check"><input type="checkbox" id="cvTheme"> Brug denne præsentations design</label></div><div class="cv-list" id="cvList"></div></div>
+    <div><div class="label" id="picHead" style="margin-bottom:6px"></div><div class="pic-grid" id="picList"></div></div>
+  </section>
+
+  <section id="snippets">
+    <div><h1>Figurer</h1><p class="lead">Gem markerede figurer, fx en boks med overskrift, en pil-proces eller et ikon med tekst, og sæt dem ind igen på andre slides. Farverne følger præsentationens tema.</p></div>
+    <div class="card">
+      <span class="label">Gem markerede figurer</span>
+      <div class="row"><input class="wide" id="snipName" type="text" placeholder="Navn, fx 3-trins proces med pile" autocomplete="off"><button class="primary" id="snipSave">Gem som figur</button></div>
+      <div class="hint" id="snipWhere"></div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
+      <input id="snipSearch" type="text" placeholder="Søg i figurer" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="pic-grid" id="snipList" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
+    <div class="hint">Former, streger, tekst, billeder og ikoner kommer med. Tabeller, grafer og specielle effekter (skygger, forløb) gør ikke. De sættes ind samme sted på sliden som originalen.</div>
+  </section>
+
+  <section id="replace">
+    <div><h1>Søg & ret</h1><p class="lead">Find det, der skal rettes, og gå det igennem ét ad gangen som i Søg og erstat. Enter retter og går videre, og Ctrl+Z fortryder den seneste rettelse.</p></div>
+    <div class="card">
+      <div class="chips small" id="rvModes">
+        <button class="chip" data-mode="text" aria-pressed="true">Søg og erstat</button>
+        <button class="chip" data-mode="numbers">Talformat (mDKK / mUSD)</button>
+        <button class="chip" data-mode="check">Figurer og skrift (Kvadrant-tjek)</button>
+        <button class="chip" data-mode="eyebrow">Eyebrow-numre</button>
+      </div>
+      <div id="rvText" style="display:grid;gap:8px">
+        <div class="row"><input class="wide" id="rvFind" type="text" placeholder="Find, fx 2024 eller kunden" autocomplete="off" spellcheck="false"><input class="wide" id="rvRepl" type="text" placeholder="Erstat med" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label class="check"><input type="checkbox" id="rvCase"> Forskel på store og små bogstaver</label><label class="check"><input type="checkbox" id="rvWhole"> Kun hele ord</label></div>
+      </div>
+      <div id="rvNumbers" class="hint" hidden>Finder beløb med valuta, der ikke står i Kvadrant-form (fx 12.500.000 kr. → 12,5 mDKK). Sprog og decimaler følger indstillingerne under Talformat.</div>
+      <div id="rvCheck" class="hint" hidden>Går Kvadrant-tjekkets fund igennem ét ad gangen: skrift uden for temaet, farver uden for paletten, overskrifter der ikke er 25 pt, tekst i bokse der ikke er 10 pt, COMMENTARY, topjustering og figurer uden for sliden.</div>
+      <div id="rvEyebrow" hidden style="display:grid;gap:8px">
+        <div class="hint">Nummeret i eyebrow'en (den lille tekst over overskriften, fx "02 | Marked") og på afsnits-slides følger præsentationens sektioner. Kun sektioner med numre tæller med, så en forside eller et appendix ikke rykker tallene. Kræver, at præsentationen er delt op i sektioner (højreklik mellem to slides i oversigten &gt; Tilføj sektion).</div>
+        <label class="check"><input type="checkbox" id="rvNames" checked> Ret også sektionsnavnet, når eyebrow'en viser et andet afsnits navn</label>
+      </div>
+      <div class="row"><label class="field">Hvor <select id="rvScope"><option value="deck">Hele præsentationen</option><option value="slide">Markerede slides</option></select></label><span class="spacer"></span><button class="primary" id="rvRun">Find</button></div>
+    </div>
+    <div class="card" id="rvPanel" hidden>
+      <div class="row"><b id="rvPos"></b><span class="spacer"></span><button class="ghost" id="rvPrev">← Forrige</button><button class="ghost" id="rvNext">Næste →</button></div>
+      <div class="rv-item" id="rvItem"></div>
+      <div class="row"><button class="primary" id="rvApply">Ret <kbd>Enter</kbd></button><button class="ghost" id="rvSkip">Spring over</button><button class="ghost" id="rvAll"></button><span class="spacer"></span><button class="ghost" id="rvUndo">Fortryd <kbd style="font:600 10.5px Inter">Ctrl+Z</kbd></button></div>
+      <div class="rv-list" id="rvList"></div>
+    </div>
+  </section>
+
+  <section id="masters">
+    <div><h1>Masters & filstørrelse</h1><p class="lead">Se hvilke slides der ikke bruger den master, I skal bruge (Elixirr, ny eller gammel Kvadrant-CVI). Fjern ubrugte masters, og gør filen mindre. Oprydningen laves altid i en kopi, så originalen ikke røres.</p></div>
+    <div class="card">
+      <div class="row"><label class="field">Alle slides skal bruge <select id="msTarget"><option value="elixirr">Elixirr</option><option value="kvNew">Kvadrant · ny CVI (Inter)</option><option value="kvOld">Kvadrant · gammel CVI (Open Sans)</option></select></label><span class="spacer"></span><button class="primary" id="msRun">Tjek masters</button></div>
+      <div id="msResult" style="display:grid;gap:10px"></div>
+    </div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Ryd op i masters</span>
+        <div class="hint" style="margin-top:4px">Masters, som ingen slide bruger, fjernes i en kopi, der åbner som en ny præsentation. Mange filer har 3-5 masters, når de skal have én.</div></div>
+        <button class="ghost" id="msClean">Lav kopi uden ubrugte masters</button></div>
+      <label class="check"><input type="checkbox" id="msLayouts"> Fjern også ubrugte layouts i de masters, der bliver</label>
+    </div>
+    <div class="card">
+      <div class="row"><div style="flex:1;min-width:220px"><span class="label">Gør filen mindre</span>
+        <div class="hint" style="margin-top:4px">Billeder, der er gemt i højere opløsning, end de vises, skaleres ned til 150 dpi. Det ser ens ud på skærm og print, men fylder meget mindre. Billeder under 150 dpi røres ikke.</div></div>
+        <button class="ghost" id="szRun">Find store billeder</button><button class="ghost" id="szShrink">Lav mindre kopi</button></div>
+      <label class="check"><input type="checkbox" id="szMasters" checked> Fjern også ubrugte masters i kopien</label>
+      <div id="szResult" class="hint"></div>
     </div>
   </section>
 
@@ -325,6 +477,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="pptx.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -359,7 +512,7 @@ const close = () => { if (ready) Office.context.ui.messageParent(JSON.stringify(
 const fail = (e) => toast(e?.message || "Det lykkedes ikke");
 
 // ---------- Visninger ----------
-const views = ["keys", "charts", "numbers", "agenda", "grid", "stamps", "harvey", "library", "check"];
+const views = ["keys", "charts", "numbers", "agenda", "grid", "stamps", "harvey", "library", "check", "pictures", "snippets", "replace", "masters"];
 let ctx = { theme: [], hex: "262139" };
 function show(view) {
   if (!views.includes(view)) view = "keys";
@@ -370,7 +523,10 @@ function show(view) {
   if (view === "library") loadBank();
   if (view === "numbers") nfExample();
   if (view === "harvey") setTimeout(() => { $("pct").focus(); $("pct").select(); }, 50);
-  if (view === "grid") setTimeout(() => $("gridCols").focus(), 50);
+  if (view === "grid") { gLoad(); setTimeout(() => $("gridCols").focus(), 50); }
+  if (view === "pictures") { picInit().catch(fail); setTimeout(() => $("picSearch").focus(), 50); }
+  if (view === "snippets") snipLoad().catch(fail);
+  if (view === "replace") setTimeout(() => $("rvFind").focus(), 50);
   current = view;
 }
 let current = "agenda";
@@ -390,6 +546,8 @@ const KEY_GROUPS = [
               ["Z", "Udkast-stempel", "stampDraft"], ["V", "Fortroligt-stempel", "stampConfidential"], ["C", "Kilde", "stampSource"],
               ["H", "Harvey ball …", "view:harvey"], ["K", "Kvadrant-tjek …", "view:check"]]],
   ["Tekst", [["+", "Større tekst", "fontBigger", "", 1], ["-", "Mindre tekst", "fontSmaller", "", 1]]],
+  ["Gitter", [["1", "Snap til hjælpegitter", "snapGrid", "", 1], ["2", "Vis / skjul hjælpegitter", "toggleGuides", "", 1], ["3", "Afstand og gitter …", "view:grid"],
+              ["4", "Billeder & CV …", "view:pictures"], ["5", "Figurer …", "view:snippets"], ["6", "Søg & ret …", "view:replace"]]],
 ];
 const ARROWS = { ArrowRight: "→", ArrowLeft: "←", ArrowDown: "↓", ArrowUp: "↑", "_": "-", "?": "+" };
 const byKey = {};
@@ -706,7 +864,7 @@ async function loadBank() {
 let libItems = {};
 async function renderLibrary(fromSearch = false) {
   const q = $("libSearch").value.trim().toLowerCase();
-  const all = (await dbGetAllCached(!fromSearch)).filter((it) => !it.id.startsWith("_") && it.source !== "pending");
+  const all = (await dbGetAllCached(!fromSearch)).filter((it) => !it.id.startsWith("_") && it.source !== "pending" && it.source !== "snippet");
   const hit = (it) => !q || [it.title, it.desc, it.code, it.source].join(" ").toLowerCase().includes(q);
   libItems = Object.fromEntries(all.map((it) => [it.id, it]));
   const bankSource = folderMode ? "folder" : "bank";
@@ -778,6 +936,7 @@ const CHECKS = {
   align: { title: "Tekst i bokse er ikke topjusteret", fix: "Topjustér" },
   source: { title: "Indholdsslides uden kilde", fix: null },
   heavy: { title: "Tekst-tunge slides (over 220 ord)", fix: null },
+  guides: { title: "Hjælpegitter ligger stadig på slides", fix: "Fjern gitteret" },
 };
 let issues = null, fonts = [];
 async function runCheck() {
@@ -795,6 +954,425 @@ function renderIssues() {
       ${issues[k].length > 40 ? `<div class="hint">… og ${issues[k].length - 40} mere</div>` : ""}
       ${k === "font" ? `<div class="hint">Temaets skrifter: ${esc(fonts.join(" / "))}</div>` : ""}
     </div>`).join("");
+}
+
+// ---------- Billeder & CV ----------
+// Billedbanken (60 KC Brand > 05 Image bank) og CV-filen vælges én gang; adgangen og en liste over billeder og CV'er huskes i IndexedDB.
+// RAW-filer, psd og mapperne "RAW files", "Previous version" og "... (All)" springes over.
+const IMG_EXT = /\.(jpe?g|png)$/i, IMG_SKIP_DIR = /^(raw files|previous version)$|\(all\)/i;
+const MAX_PX = 2000;   // fuld slidebredde (13,3") ved 150 dpi
+const norm = (s) => String(s).toLowerCase().replace(/ø/g, "o").replace(/æ/g, "ae").replace(/å/g, "a").normalize("NFD").replace(/[̀-ͯ]/g, "");
+let picDir = null, picIndex = null, picCat = "all", picShown = [], cvHandle = null, cvIndex = null;
+const meta = (id) => idb("meta", "readonly", (st) => st.get(id)).catch(() => null);
+const setMeta = (rec) => idb("meta", "readwrite", (st) => st.put({ source: "_", ...rec }));
+async function permitted(h, mode, ask) {
+  let p = await h.queryPermission({ mode });
+  if (p !== "granted" && ask) p = await h.requestPermission({ mode });
+  return p === "granted";
+}
+async function fileAt(root, path) {
+  let d = root;
+  for (const p of path.slice(0, -1)) d = await d.getDirectoryHandle(p);
+  return (await d.getFileHandle(path[path.length - 1])).getFile();
+}
+
+async function picInit() {
+  if (!FS) { $("picStatus").textContent = "Denne version af PowerPoint kan ikke åbne mapper fra tilføjelser."; $("cvPick").hidden = true; return; }
+  picDir ||= (await meta("_imgDir"))?.handle || null;
+  cvHandle ||= (await meta("_cvFile"))?.handle || null;
+  picIndex ||= (await meta("_imgIndex"))?.items || null;
+  if (!cvIndex) { const c = await meta("_cvIndex"); if (c && cvHandle && c.name === cvHandle.name) cvIndex = c; }
+  $("picPick").hidden = !!picDir;
+  $("picRescan").hidden = !picDir;
+  if (!picDir) $("picStatus").innerHTML = "Første gang: tryk <b>Forbind til billedbanken</b> og vælg mappen <b>05 Image bank</b> (Kvadrant Consulting &gt; 60 KC Brand).";
+  else $("picStatus").textContent = picIndex ? `${picIndex.length} billeder i billedbanken` : "Billedbanken er ikke læst endnu. Tryk Opdatér.";
+  $("cvStatus").innerHTML = cvHandle ? `CV'er fra <b>${esc(cvHandle.name)}</b>${cvIndex ? ` · ${cvIndex.slides.length} slides` : ""}`
+    : "CV'er: vælg <b>Kvadrant CVs.pptx</b> (20 Sales &gt; _10 CVs, pricelist, references and proposals) én gang.";
+  $("cvPick").textContent = cvHandle ? "Skift CV-fil" : "Vælg CV-filen";
+  if (picDir && !picIndex && (await permitted(picDir, "read", false))) await scanPictures();
+  renderPictures();
+}
+async function pickPictures() {
+  try { picDir = await window.showDirectoryPicker({ id: "kvadrant-images", mode: "read" }); }
+  catch (e) { if (e.name !== "AbortError") fail(e); return; }
+  await setMeta({ id: "_imgDir", handle: picDir });
+  picIndex = null;
+  await scanPictures();
+  await picInit();
+}
+async function scanPictures() {
+  if (!(await permitted(picDir, "read", true))) { toast("Kvadrant fik ikke adgang til billedbanken"); return; }
+  $("picStatus").textContent = "Læser billedbanken …";
+  const items = [];
+  async function walk(dir, path) {
+    for await (const [name, h] of dir.entries()) {
+      if (h.kind === "directory") { if (!IMG_SKIP_DIR.test(name)) await walk(h, [...path, name]); }
+      else if (IMG_EXT.test(name) && !/^[~.]/.test(name)) items.push({ path: [...path, name], cat: path[0] || "", search: norm([...path, name].join(" ")) });
+    }
+  }
+  await walk(picDir, []);
+  items.sort((a, b) => a.path.join("/").localeCompare(b.path.join("/"), "da"));
+  picIndex = items;
+  await setMeta({ id: "_imgIndex", items, at: Date.now() });
+  $("picStatus").textContent = `${items.length} billeder i billedbanken`;
+}
+
+// Navn og titel på et CV: første linje, der ligner et navn (2-4 ord med stort), ellers "Ditlev works as …".
+const NAME_RX = /^\p{Lu}[\p{L}'’-]+(?:\s+\p{Lu}[\p{L}'’.-]*){1,3}$/u;
+const NOT_NAME = /analyst|consultant|manager|partner|director|practice|background|services|kvadrant|commercial|marketing|strategy|transformation|excellence|go-to-market|selection|company/i;
+function cvPerson(text) {
+  const lines = text.split("\n");
+  const i = lines.findIndex((l) => l.length < 40 && NAME_RX.test(l) && !NOT_NAME.test(l));
+  if (i >= 0) return { name: lines[i], role: lines.slice(i + 1, i + 4).find((l) => l.length < 60 && !l.includes("@") && !/^(background|baggrund)$/i.test(l) && l !== lines[i]) || "" };
+  const m = /\b(\p{Lu}\p{Ll}+) (?:works|has|is|was)\b/u.exec(text);
+  return { name: m ? m[1] : "", role: "" };
+}
+async function pickCv() {
+  let h;
+  try { [h] = await window.showOpenFilePicker({ id: "kvadrant-cv", types: [{ description: "PowerPoint", accept: { "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"] } }] }); }
+  catch (e) { if (e.name !== "AbortError") fail(e); return; }
+  cvHandle = h; cvIndex = null;
+  await setMeta({ id: "_cvFile", handle: h });
+  await loadCv(true);
+  await picInit();
+}
+// Kun slidernes tekst læses (ikke billederne), og resultatet huskes, til filen ændres.
+async function loadCv(ask) {
+  if (!cvHandle || !(await permitted(cvHandle, "read", ask))) return null;
+  const file = await cvHandle.getFile();
+  if (cvIndex?.modified === file.lastModified && cvIndex.name === file.name) return cvIndex;
+  $("cvStatus").textContent = "Læser CV-filen …";
+  await loadFflate();
+  const files = fflate.unzipSync(new Uint8Array(await file.arrayBuffer()),
+    { filter: (f) => /^ppt\/(presentation\.xml|_rels\/presentation\.xml\.rels|slides\/slide\d+\.xml|slides\/_rels\/slide\d+\.xml\.rels)$/.test(f.name) });
+  const secs = KvPptx.sections(files);
+  const slides = KvPptx.slideList(files).map((s) => {
+    const text = KvPptx.slideText(files, s.path);
+    return { index: s.index, ...cvPerson(text), sec: secs.find((x) => x.slides.includes(s.index))?.name || "", text: norm(text) };
+  }).filter((s) => s.text);
+  cvIndex = { id: "_cvIndex", modified: file.lastModified, name: file.name, slides };
+  await setMeta(cvIndex);
+  $("cvStatus").innerHTML = `CV'er fra <b>${esc(file.name)}</b> · ${slides.length} slides`;
+  return cvIndex;
+}
+
+let picTimer, picObserver;
+async function renderPictures() {
+  const toks = norm($("picSearch").value.trim()).split(/\s+/).filter(Boolean);
+  const cats = [...new Set((picIndex || []).map((it) => it.cat))];
+  $("picCats").innerHTML = picIndex ? [["all", "Alle"], ...cats.map((c) => [c, c])].map(([c, n]) => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${picCat === c}">${esc(n)}</button>`).join("") : "";
+  // CV'er: når der søges, og CV-filen er valgt. Træf i navnet først.
+  let cvHits = [];
+  if (toks.length && cvHandle) {
+    const idx = cvIndex || (await loadCv(false).catch(() => null));
+    if (idx) cvHits = idx.slides.filter((s) => toks.every((t) => s.text.includes(t)))
+      .sort((a, b) => (toks.every((t) => norm(b.name).includes(t)) - toks.every((t) => norm(a.name).includes(t))) || a.index - b.index).slice(0, 12);
+  }
+  $("cvBlock").hidden = !cvHits.length;
+  $("cvList").innerHTML = cvHits.map((s) => `<div class="cv"><div class="who"><b>${esc(s.name || "CV")}</b>${s.sec ? `<span class="tag${/former|old/i.test(s.sec) ? " old" : ""}">${esc(s.sec)}</span>` : ""}
+    <div>${esc(s.role)}${s.role ? " · " : ""}slide ${s.index + 1}</div></div><button class="ghost" data-cv="${s.index}">Indsæt CV</button></div>`).join("");
+  const hits = (picIndex || []).filter((it) => (picCat === "all" || it.cat === picCat) && toks.every((t) => it.search.includes(t)));
+  picShown = hits.slice(0, 150);
+  $("picHead").textContent = !picIndex ? "" : hits.length ? `${hits.length} billeder${hits.length > picShown.length ? ` · viser de første ${picShown.length}, søg for at indsnævre` : ""}` : "Ingen billeder matcher";
+  $("picList").innerHTML = picShown.map((it, i) => `<button class="pic" data-i="${i}" title="Indsæt ${esc(it.path.join(" / "))}">
+    <div class="im" data-thumb="${i}"></div><div class="t">${esc(it.path[it.path.length - 1].replace(/\.[^.]+$/, ""))}<small>${esc(it.path.slice(0, -1).join(" / "))}</small></div></button>`).join("");
+  picObserver?.disconnect();
+  picObserver = new IntersectionObserver((entries) => entries.forEach((e) => {
+    if (!e.isIntersecting) return;
+    picObserver.unobserve(e.target);
+    queueThumb(e.target, picShown[+e.target.dataset.thumb]);
+  }), { root: document.querySelector("main"), rootMargin: "200px" });
+  document.querySelectorAll("#picList .im").forEach((el) => picObserver.observe(el));
+}
+// Miniaturer laves af højst 4 billeder ad gangen og gemmes, til filen ændres.
+const thumbQueue = [];
+let thumbBusy = 0;
+function queueThumb(el, it) { if (it) { thumbQueue.push([el, it]); pumpThumbs(); } }
+function pumpThumbs() {
+  while (thumbBusy < 4 && thumbQueue.length) {
+    const [el, it] = thumbQueue.shift();
+    thumbBusy++;
+    thumbFor(it).then((url) => { if (url) el.style.backgroundImage = `url(${url})`; }).catch(() => {}).finally(() => { thumbBusy--; pumpThumbs(); });
+  }
+}
+async function thumbFor(it) {
+  if (!(await permitted(picDir, "read", false))) return null;
+  const key = "img:" + it.path.join("/");
+  const file = await fileAt(picDir, it.path);
+  const hit = await idb("data", "readonly", (st) => st.get(key)).catch(() => null);
+  if (hit && hit.modified === file.lastModified) return hit.thumb;
+  const bmp = await createImageBitmap(file, { resizeWidth: 260, resizeQuality: "medium" });
+  const c = document.createElement("canvas");
+  c.width = bmp.width; c.height = bmp.height;
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(bmp, 0, 0);
+  bmp.close?.();
+  const thumb = c.toDataURL("image/jpeg", 0.75);
+  await idb("data", "readwrite", (st) => st.put({ id: key, thumb, modified: file.lastModified }));
+  return thumb;
+}
+// Billedet skaleres til højst 2000 px på den lange led (150 dpi ved fuld slidebredde); PNG beholder gennemsigtighed.
+async function insertPic(it) {
+  if (!(await permitted(picDir, "read", true))) throw new Error("Giv Kvadrant adgang til billedbanken");
+  toast("Gør billedet klar …");
+  const file = await fileAt(picDir, it.path);
+  const png = /\.png$/i.test(file.name);
+  const bmp = await createImageBitmap(file);
+  const f = Math.min(1, MAX_PX / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * f), h = Math.round(bmp.height * f);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  g.imageSmoothingQuality = "high";
+  if (!png) { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); }
+  g.drawImage(bmp, 0, 0, w, h);
+  bmp.close?.();
+  const blob = await new Promise((res) => c.toBlob(res, png ? "image/png" : "image/jpeg", 0.85));
+  const data = toB64(new Uint8Array(await blob.arrayBuffer()));
+  await idb("data", "readwrite", (st) => st.put({ id: "tmp:pic", data, w, h, name: file.name.replace(/\.[^.]+$/, "") }));
+  await call("insertPicture", "tmp:pic");
+  toast("Billede indsat");
+}
+// Kun CV-sliden og det, den bruger (layout, master, billeder), skæres ud af CV-filen og sættes ind efter den slide, man står på.
+async function insertCv(i) {
+  if (!(await permitted(cvHandle, "read", true))) throw new Error("Giv Kvadrant adgang til CV-filen");
+  toast("Henter CV'et …");
+  await loadFflate();
+  const all = new Uint8Array(await (await cvHandle.getFile()).arrayBuffer());
+  const files = fflate.unzipSync(all, { filter: (f) => !/^ppt\/(media|embeddings)\//.test(f.name) });
+  KvPptx.keepSlides(files, [i]);
+  KvPptx.dropUnused(files, { layouts: true });
+  const need = new Set();
+  for (const k of Object.keys(files).filter((k) => k.endsWith(".rels"))) {
+    const part = k === "_rels/.rels" ? "" : k.replace("_rels/", "").replace(/\.rels$/, "");
+    for (const r of KvPptx.rels(files, part)) if (r.path && /^ppt\/(media|embeddings)\//.test(r.path)) need.add(r.path);
+  }
+  Object.assign(files, fflate.unzipSync(all, { filter: (f) => need.has(f.name) }));
+  await idb("data", "readwrite", (st) => st.put({ id: "tmp:insert", data: toB64(KvPptx.zip(files)) }));
+  await call("insertBlock", "tmp:insert", $("cvTheme").checked);
+  toast("CV sat ind efter den slide, du står på");
+}
+
+// ---------- Figurer ----------
+// Gemmes som <navn>.json i slidebank-mappen (_figurer), så alle kan bruge dem. Uden slidebank-mappe gemmes de kun på denne pc.
+let snips = [], snipDelete = null;
+async function snipDir(create) {
+  await folderInit();
+  if (!folderMode || !(await folderAccess(create))) return null;
+  return sub(await bankRoot(), "_figurer", create);
+}
+async function snipLoad() {
+  $("snipWhere").textContent = FS && (await folderInit(), folderMode) ? "Gemmes i slidebank-mappen (_figurer), så alle kan bruge dem."
+    : "Gemmes kun på denne pc. Forbind til slidebanken under Slidebank for at dele dem med de andre.";
+  const list = [];
+  const dir = await snipDir(false).catch(() => null);
+  if (dir) for await (const [fn, fh] of dir.entries()) {
+    if (fh.kind !== "file" || !/\.json$/i.test(fn)) continue;
+    try { const j = JSON.parse(await (await fh.getFile()).text()); list.push({ name: j.name, thumb: j.thumb, items: j.items, id: "file:" + fn, file: fn }); } catch {}
+  }
+  for (const m of (await dbGetAll()).filter((m) => m.source === "snippet")) list.push({ name: m.title, thumb: m.thumb, id: m.id, local: true });
+  snips = list.sort((a, b) => a.name.localeCompare(b.name, "da"));
+  renderSnips();
+}
+function renderSnips() {
+  const toks = norm($("snipSearch").value.trim()).split(/\s+/).filter(Boolean);
+  const hits = snips.filter((s) => toks.every((t) => norm(s.name).includes(t)));
+  $("snipList").innerHTML = hits.map((s) => `<button class="pic wide-im" data-snip="${esc(s.id)}" title="Indsæt ${esc(s.name)}">
+    <div class="im" style="background-image:url(${s.thumb})"></div><div class="t">${esc(s.name)}<small>${s.local ? "kun på denne pc" : "fælles"}</small></div>
+    <span class="x" data-snipdel="${esc(s.id)}" title="Slet">×</span></button>`).join("")
+    || `<div class="hint">${snips.length ? "Ingen figurer matcher." : "Ingen figurer endnu. Markér figurer på en slide, giv dem et navn, og tryk Gem som figur."}</div>`;
+}
+// Udsnit af slidebilledet omkring de markerede figurer.
+async function cropThumb(rec) {
+  const img = new Image();
+  img.src = "data:image/png;base64," + rec.img;
+  await img.decode();
+  const s = img.naturalWidth / rec.slide.w, pad = 6;
+  const x = Math.max(0, (rec.box.left - pad) * s), y = Math.max(0, (rec.box.top - pad) * s);
+  const w = Math.min(img.naturalWidth - x, (rec.box.right - rec.box.left + 2 * pad) * s), h = Math.min(img.naturalHeight - y, (rec.box.bottom - rec.box.top + 2 * pad) * s);
+  const f = Math.min(1, 360 / w), c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * f)); c.height = Math.max(1, Math.round(h * f));
+  c.getContext("2d").drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
+async function snipSave() {
+  const name = $("snipName").value.trim() || "Figur " + new Date().toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  $("snipSave").disabled = true;
+  try {
+    const key = await call("snippetCapture");
+    const rec = await idb("data", "readonly", (st) => st.get(key));
+    const thumb = await cropThumb(rec);
+    const dir = await snipDir(true).catch(() => null);
+    if (dir) await writeFile(dir, safeName(name) + ".json", new TextEncoder().encode(JSON.stringify({ name, items: rec.items, thumb, created: new Date().toISOString() })));
+    else {
+      const id = "snip:" + crypto.randomUUID();
+      await idb("meta", "readwrite", (st) => st.put({ id, source: "snippet", title: name, thumb, added: Date.now() }));
+      await idb("data", "readwrite", (st) => st.put({ id, items: rec.items }));
+    }
+    await idb("data", "readwrite", (st) => st.delete(key));
+    $("snipName").value = "";
+    toast(`Gemt: ${name}${rec.skipped ? ` · ${rec.skipped} figurer (fx tabeller eller grafer) kom ikke med` : ""}`);
+    await snipLoad();
+  } catch (e) { fail(e); } finally { $("snipSave").disabled = false; }
+}
+async function snipInsert(id) {
+  const s = snips.find((x) => x.id === id);
+  if (!s) return;
+  const items = s.items || (await idb("data", "readonly", (st) => st.get(id)))?.items;
+  if (!items) throw new Error("Figuren kunne ikke hentes");
+  await idb("data", "readwrite", (st) => st.put({ id: "tmp:snippet", items }));
+  const n = await call("snippetInsert", "tmp:snippet");
+  toast(`${s.name} sat ind (${n} ${n === 1 ? "figur" : "figurer"})`);
+}
+// Slet kræver to klik på × (vinduet kan ikke vise en bekræftelse).
+async function snipRemove(id) {
+  if (snipDelete !== id) { snipDelete = id; toast("Klik × igen for at slette figuren"); setTimeout(() => { if (snipDelete === id) snipDelete = null; }, 4000); return; }
+  snipDelete = null;
+  const s = snips.find((x) => x.id === id);
+  if (s?.file) { const dir = await snipDir(true); await dir.removeEntry(s.file); }
+  else { await idb("meta", "readwrite", (st) => st.delete(id)); await idb("data", "readwrite", (st) => st.delete(id)); }
+  toast("Figuren er slettet");
+  await snipLoad();
+}
+
+// ---------- Søg & ret ----------
+// Forslagene kommer fra runtime; her gås de igennem ét ad gangen. Hver rettelse giver et modsat forslag tilbage (fortryd).
+// Retter man i et felt, flyttes de senere forslag i samme felt tilsvarende.
+let rvMode = "text", rv = null;
+function rvShowMode() {
+  document.querySelectorAll("#rvModes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === rvMode));
+  $("rvText").hidden = rvMode !== "text";
+  $("rvNumbers").hidden = rvMode !== "numbers";
+  $("rvCheck").hidden = rvMode !== "check";
+  $("rvEyebrow").hidden = rvMode !== "eyebrow";
+  $("rvScope").closest(".field").hidden = rvMode === "check" || rvMode === "eyebrow";
+  $("rvRun").textContent = rvMode === "text" ? "Find" : "Find det, der skal rettes";
+}
+async function rvRun() {
+  $("rvRun").disabled = true;
+  progressHandler = (t) => { $("rvPanel").hidden = false; $("rvPos").textContent = t; };
+  try {
+    const scope = $("rvScope").value;
+    const items = rvMode === "text" ? await call("findText", { q: $("rvFind").value, repl: $("rvRepl").value, matchCase: $("rvCase").checked, whole: $("rvWhole").checked, scope })
+      : rvMode === "numbers" ? await call("numberItems", { ...nfOpts(), scope })
+      : rvMode === "check" ? await call("checkItems")
+      : await call("eyebrowItems", { names: $("rvNames").checked });
+    rv = { items, i: 0, done: new Set(), history: [] };
+    if (!items.length) { $("rvPanel").hidden = true; toast(rvMode === "text" ? "Fandt ikke noget" : rvMode === "eyebrow" ? "Alle eyebrow-numre passer til sektionerne" : "Intet at rette"); return; }
+    $("rvPanel").hidden = false;
+    document.activeElement?.blur?.();   // så Enter retter og Ctrl+Z fortryder, i stedet for at søge igen
+    rvGo(0);
+  } catch (e) { $("rvPanel").hidden = true; fail(e); } finally { progressHandler = null; $("rvRun").disabled = false; }
+}
+function rvRender() {
+  const it = rv.items[rv.i], done = rv.done.has(rv.i), left = rv.items.length - rv.done.size;
+  $("rvPos").textContent = `${rv.i + 1} af ${rv.items.length}${rv.done.size ? ` · ${rv.done.size} rettet` : ""}`;
+  const change = it.kind === "text"
+    ? `${esc(it.pre || "")}<del>${esc(it.before)}</del>${it.after ? `<ins>${esc(it.after)}</ins>` : ""}${esc(it.post || "")}`
+    : `<del>${esc(it.before)}</del> → <ins>${esc(it.after)}</ins>`;
+  $("rvItem").innerHTML = `<div class="where">Slide ${it.slide} · ${esc(it.name || "")}${it.label ? " · " + esc(it.label) : ""}${done ? " · rettet" : ""}</div>${change}`;
+  $("rvApply").innerHTML = `${it.kind === "text" && !it.after ? "Slet" : "Ret"} <kbd>Enter</kbd>`;
+  $("rvApply").disabled = done;
+  $("rvAll").textContent = `Ret alle (${left})`;
+  $("rvAll").disabled = !left;
+  $("rvUndo").disabled = !rv.history.length;
+  $("rvList").innerHTML = rv.items.map((x, i) => `<button class="rv-row${rv.done.has(i) ? " done" : ""}" data-rv="${i}" aria-current="${i === rv.i}">
+    <span class="no">Slide ${x.slide}</span><span>${esc(x.before)} → ${esc(x.after || "(slet)")}</span></button>`).join("");
+  $("rvList").querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest" });
+}
+function rvGo(i) {
+  rv.i = (i + rv.items.length) % rv.items.length;
+  rvRender();
+  call("reviewGo", rv.items[rv.i]).catch(() => {});
+}
+function rvNextOpen() {
+  const n = rv.items.length;
+  for (let k = 1; k <= n; k++) { const j = (rv.i + k) % n; if (!rv.done.has(j)) return rvGo(j); }
+  rvRender();
+  toast("Alt er gennemgået");
+}
+function rvShift(slideId, shapeId, start, delta) {
+  if (!delta) return;
+  const later = (x) => x.kind === "text" && x.slideId === slideId && x.shapeId === shapeId && x.start > start;
+  rv.items.forEach((x) => { if (later(x)) x.start += delta; });
+  rv.history.forEach((h) => { if (later(h.undo)) h.undo.start += delta; });
+}
+async function rvApply(next = true) {
+  const i = rv.i, it = rv.items[i];
+  if (rv.done.has(i)) { if (next) rvNextOpen(); return; }
+  const undo = await call("reviewApply", it);
+  if (it.kind === "text") { rvShift(it.slideId, it.shapeId, undo.start, it.after.length - it.before.length); it.start = undo.start; }
+  rv.done.add(i);
+  rv.history.push({ i, undo });
+  if (next) rvNextOpen(); else rvRender();
+}
+async function rvApplyAll() {
+  const todo = rv.items.map((_, i) => i).filter((i) => !rv.done.has(i));
+  let ok = 0;
+  for (const [n, i] of todo.entries()) {
+    $("rvPos").textContent = `Retter ${n + 1} af ${todo.length} …`;
+    rv.i = i;
+    try { await rvApply(false); ok++; } catch (e) { console.error(e); }
+  }
+  rvRender();
+  toast(`Rettet ${ok} af ${todo.length}${ok < todo.length ? " (resten var ændret i mellemtiden)" : ""} · Ctrl+Z fortryder én ad gangen`);
+}
+async function rvUndo() {
+  const h = rv?.history.pop();
+  if (!h) { toast("Intet at fortryde"); return; }
+  try {
+    const redo = await call("reviewApply", h.undo);
+    const it = rv.items[h.i];
+    if (it.kind === "text") { rvShift(it.slideId, it.shapeId, redo.start, h.undo.after.length - h.undo.before.length); it.start = redo.start; }
+    rv.done.delete(h.i);
+    rvGo(h.i);
+    toast("Fortrudt");
+  } catch (e) { rv.history.push(h); fail(e); }
+}
+
+// ---------- Masters & filstørrelse ----------
+const MB = (b) => (b / 1e6).toLocaleString("da-DK", { maximumFractionDigits: 1 }) + " MB";
+const FAMILY = { elixirr: "Elixirr", kvNew: "Kvadrant · ny CVI", kvOld: "Kvadrant · gammel CVI", other: "Andet" };
+async function msRun() {
+  $("msRun").disabled = true;
+  $("msResult").innerHTML = '<div class="hint">Læser masters …</div>';
+  try {
+    const r = await call("mastersReport"), target = $("msTarget").value, label = FAMILY[target];
+    const wrong = r.slides.filter((s) => s.family !== target);
+    $("msResult").innerHTML = `<table class="ms"><tr><th>Master (tema)</th><th>CVI</th><th class="n">Layouts</th><th class="n">Slides</th></tr>${r.masters.map((m) =>
+      `<tr><td>${esc(m.name || "(uden navn)")}</td><td>${esc(m.familyName)}</td><td class="n">${m.layouts}</td><td class="n">${m.slides || '<span class="tag old">ubrugt</span>'}</td></tr>`).join("")}</table>`
+      + (r.masters.some((m) => m.family === target) ? "" : `<div class="hint">Præsentationen har ingen ${esc(label)}-master. Start fra templatet i 60 KC Brand &gt; 04 Templates, og sæt slides ind med "Brug destinationstema".</div>`)
+      + (wrong.length
+        ? `<div class="issue-head"><b>Slides uden ${esc(label)}-masteren<span class="badge">${wrong.length}</span></b></div>
+           <div style="display:grid;gap:6px">${wrong.slice(0, 80).map((s) => `<div class="issue"><span>Slide ${s.slide} · ${esc(FAMILY[s.family])}</span><button data-ms="${s.slideId}">Gå til</button></div>`).join("")}</div>
+           ${wrong.length > 80 ? `<div class="hint">… og ${wrong.length - 80} mere</div>` : ""}
+           <div class="hint">Skift layoutet via Hjem &gt; Layout og vælg et ${esc(label)}-layout. Bagefter kan de gamle masters fjernes nedenfor.</div>`
+        : `<div class="ok-card"><span class="dot">✓</span><div><b>Alle ${r.slides.length} slides bruger ${esc(label)}-masteren.</b></div></div>`);
+  } catch (e) { $("msResult").innerHTML = ""; fail(e); } finally { $("msRun").disabled = false; }
+}
+async function withProgress(btn, fn) {
+  $(btn).disabled = true;
+  progressHandler = toast;
+  try { await fn(); } catch (e) { fail(e); } finally { progressHandler = null; $(btn).disabled = false; }
+}
+
+// ---------- Hjælpegitter og afstand ----------
+const G_FIELDS = { gCols: "cols", gRows: "rows", gGutter: "gutter", gL: "l", gR: "r", gT: "t", gB: "b" };
+const G_DEF = { cols: 12, rows: 6, gutter: 0.5, l: 1, r: 1, t: 1, b: 1.5 };
+function gLoad() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem("kvadrant.guides")) || {}; } catch {}
+  const o = { ...G_DEF, ...s };
+  for (const [id, k] of Object.entries(G_FIELDS)) $(id).value = String(o[k]).replace(".", ",");
+  $("gKeep").checked = !!o.keepSize;
+}
+// Indstillingerne gemmes, så genvejene (1 = snap, 2 = vis/skjul) bruger de samme.
+function gOpts() {
+  const o = Object.fromEntries(Object.entries(G_FIELDS).map(([id, k]) => [k, Math.max(0, num($(id).value, G_DEF[k]))]));
+  o.cols = Math.max(1, Math.round(o.cols)); o.rows = Math.max(1, Math.round(o.rows)); o.keepSize = $("gKeep").checked;
+  try { localStorage.setItem("kvadrant.guides", JSON.stringify(o)); } catch {}
+  return { ...o, all: $("gAll").checked };
 }
 
 // ---------- Hændelser ----------
@@ -890,8 +1468,77 @@ $("checkResult").addEventListener("click", (e) => {
   }
 });
 
+// Billeder & CV
+$("picPick").addEventListener("click", pickPictures);
+$("picRescan").addEventListener("click", () => scanPictures().then(renderPictures, fail));
+$("cvPick").addEventListener("click", pickCv);
+$("picSearch").addEventListener("input", () => { clearTimeout(picTimer); picTimer = setTimeout(() => renderPictures().catch(fail), 150); });
+$("picCats").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { picCat = b.dataset.cat; renderPictures().catch(fail); } });
+$("picList").addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (b) insertPic(picShown[+b.dataset.i]).catch(fail); });
+$("cvList").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-cv]");
+  if (!b) return;
+  b.disabled = true;
+  insertCv(+b.dataset.cv).catch(fail).finally(() => { b.disabled = false; });
+});
+
+// Figurer
+$("snipSave").addEventListener("click", snipSave);
+$("snipSearch").addEventListener("input", renderSnips);
+$("snipList").addEventListener("click", (e) => {
+  const del = e.target.closest("[data-snipdel]");
+  if (del) { e.stopPropagation(); snipRemove(del.dataset.snipdel).catch(fail); return; }
+  const b = e.target.closest("[data-snip]");
+  if (b) snipInsert(b.dataset.snip).catch(fail);
+});
+
+// Søg & ret
+$("rvModes").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) { rvMode = b.dataset.mode; rvShowMode(); } });
+$("rvRun").addEventListener("click", rvRun);
+$("rvPrev").addEventListener("click", () => rv && rvGo(rv.i - 1));
+$("rvNext").addEventListener("click", () => rv && rvGo(rv.i + 1));
+$("rvSkip").addEventListener("click", () => rv && rvNextOpen());
+$("rvApply").addEventListener("click", () => rvApply().catch(fail));
+$("rvAll").addEventListener("click", () => rvApplyAll().catch(fail));
+$("rvUndo").addEventListener("click", () => rvUndo());
+$("rvList").addEventListener("click", (e) => { const b = e.target.closest("[data-rv]"); if (b) rvGo(+b.dataset.rv); });
+rvShowMode();
+
+// Masters & filstørrelse
+$("msRun").addEventListener("click", msRun);
+$("msResult").addEventListener("click", (e) => { const b = e.target.closest("[data-ms]"); if (b) call("goTo", { slideId: b.dataset.ms }).catch(fail); });
+$("msClean").addEventListener("click", () => withProgress("msClean", async () => {
+  const r = await call("masterCleanCopy", { layouts: $("msLayouts").checked });
+  toast(r.masters || r.layouts ? `Kopi åbnet: ${r.masters} masters${r.layouts ? ` og ${r.layouts} layouts` : ""} fjernet. Gem den under et nyt navn.` : "Der er ingen ubrugte masters at fjerne");
+}));
+$("szRun").addEventListener("click", () => withProgress("szRun", async () => {
+  const r = await call("sizeReport", { dpi: 150 });
+  $("szResult").innerHTML = `Filen fylder <b>${MB(r.file)}</b>, heraf billeder ${MB(r.media)}. `
+    + (r.count ? `<b>${r.count} billeder</b> er gemt i højere opløsning end nødvendigt. En mindre kopi sparer ca. <b>${MB(r.saving)}</b>.` : "Ingen billeder er over 150 dpi.")
+    + (r.unusedMasters ? ` ${r.unusedMasters} ubrugte masters kan også fjernes.` : "")
+    + (r.top.length ? `<br>Størst: ${r.top.map((t) => `${esc(t.name)} (${MB(t.bytes)}, ${t.dpi} dpi)`).join(", ")}` : "");
+}));
+$("szShrink").addEventListener("click", () => withProgress("szShrink", async () => {
+  const r = await call("shrinkCopy", { dpi: 150, masters: $("szMasters").checked });
+  toast(r.images || r.masters ? `Mindre kopi åbnet: ${r.images} billeder skaleret ned (ca. ${MB(r.saved)} sparet)${r.masters ? `, ${r.masters} masters fjernet` : ""}. Gem den under et nyt navn.` : "Der var intet at gøre mindre");
+}));
+
+// Afstand og hjælpegitter
+const runGap = (axis) => call("setGap", { axis, gapCm: num($("gapCm").value, 0.3) }).then((n) => toast(`${n} ${axis === "h" ? "vandret" : "lodret"} med ${$("gapCm").value} cm`), fail);
+$("gapH").addEventListener("click", () => runGap("h"));
+$("gapV").addEventListener("click", () => runGap("v"));
+$("gToggle").addEventListener("click", () => call("guidesToggle", gOpts()).then((r) => toast(r.shown ? "Hjælpegitter vist" : "Hjælpegitter skjult"), fail));
+$("gSnap").addEventListener("click", () => call("snapToGrid", gOpts()).then((n) => toast(`${n} figurer snappet til gitteret`), fail));
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { close(); return; }
+  if (current === "replace") {
+    const typing = e.target.matches("input[type=text]");
+    if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); rvUndo(); return; }
+    if (e.key === "Enter" && (typing || !rv || $("rvPanel").hidden)) { e.preventDefault(); rvRun(); return; }
+    if (e.key === "Enter" && !e.target.matches("button, select")) { e.preventDefault(); rvApply().catch(fail); return; }
+    if (e.key === "F3" && rv) { e.preventDefault(); rvGo(rv.i + (e.shiftKey ? -1 : 1)); return; }
+  }
   if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); close(); return; }   // Ctrl+Shift+K igen lukker
   if (current === "keys" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.target.matches("input")) {
     const k = ARROWS[e.key] || (e.key.length === 1 ? e.key.toUpperCase() : null);
